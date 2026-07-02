@@ -1,0 +1,42 @@
+{
+  "name": "frontend",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "build": "nuxt build",
+    "dev": "nuxt dev",
+    "generate": "nuxt generate",
+    "preview": "nuxt preview",
+    "postinstall": "nuxt prepare",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "typecheck": "nuxt typecheck",
+    "test": "vitest run",
+    "gen:api": "openapi-typescript ../openapi.json -o app/types/api.ts"
+  },
+  "dependencies": {
+    "@pinia/nuxt": "^0.11.3",
+    "@vueuse/core": "^14.3.0",
+    "nuxt": "^4.4.8",
+    "pinia": "^3.0.4",
+    "vue": "^3.5.38",
+    "vue-router": "^5.1.0",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@nuxt/eslint": "^1.16.0",
+    "@nuxt/test-utils": "^4.0.3",
+    "@tailwindcss/vite": "^4.3.2",
+    "@vite-pwa/nuxt": "^1.1.1",
+    "@vue/test-utils": "^2.4.11",
+    "eslint": "^10.6.0",
+    "happy-dom": "^20.10.6",
+    "openapi-typescript": "^7.13.0",
+    "prettier": "^3.9.4",
+    "tailwindcss": "^4.3.2",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.9",
+    "vue-tsc": "^3.3.6"
+  }
+}
