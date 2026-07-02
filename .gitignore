@@ -1,0 +1,22 @@
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# OS
+.DS_Store
+
+# Env / secrets
+.env
+.env.local
+.env.*.local
+
+# Build
+target/
+dist/
+.output/
+.nuxt/
+node_modules/
+
+# Logs
+*.log
