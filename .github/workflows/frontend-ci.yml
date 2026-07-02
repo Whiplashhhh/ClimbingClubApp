@@ -1,0 +1,53 @@
+name: frontend
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "frontend/**"
+      - "openapi.json"
+      - "package.json"
+      - "pnpm-lock.yaml"
+      - "pnpm-workspace.yaml"
+      - ".github/workflows/frontend-ci.yml"
+  pull_request:
+    paths:
+      - "frontend/**"
+      - "openapi.json"
+      - "package.json"
+      - "pnpm-lock.yaml"
+      - "pnpm-workspace.yaml"
+      - ".github/workflows/frontend-ci.yml"
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Ensure generated API types are up to date
+        run: |
+          pnpm --dir frontend gen:api
+          git diff --exit-code frontend/app/types/api.ts
+
+      - name: Lint
+        run: pnpm --dir frontend lint
+
+      - name: Typecheck
+        run: pnpm --dir frontend typecheck
+
+      - name: Unit tests
+        run: pnpm --dir frontend test
+
+      - name: Build
+        run: pnpm --dir frontend build

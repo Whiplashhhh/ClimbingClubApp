@@ -1,0 +1,35 @@
+name: backend
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "backend/**"
+      - "openapi.json"
+      - ".github/workflows/backend-ci.yml"
+  pull_request:
+    paths:
+      - "backend/**"
+      - "openapi.json"
+      - ".github/workflows/backend-ci.yml"
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+
+      # verify inclut spotless:check (validate), les tests (Testcontainers)
+      # et l'export du contrat OpenAPI
+      - name: Build and test
+        working-directory: backend
+        run: ./mvnw --batch-mode verify
+
+      - name: Ensure committed openapi.json is up to date
+        run: git diff --exit-code openapi.json
