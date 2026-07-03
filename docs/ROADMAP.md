@@ -3,14 +3,14 @@
 > Une case cochée = tranche mergée dans `main` avec CI verte.
 
 ## Phase 0 — Fondations
-- [ ] Monorepo `/backend` + `/frontend`, `.nvmrc` (Node 24)
-- [ ] docker-compose : Postgres 16, Redis, MinIO, back, front
-- [ ] CI GitHub Actions (build/test/lint back + front, jobs séparés)
-- [ ] springdoc + export `openapi.json` ; `openapi-typescript` (`pnpm gen:api`)
-- [ ] Coquille Nuxt 4 + PWA installable (`@vite-pwa/nuxt`)
-- [ ] Health check `/actuator/health`
-- [ ] Flyway baseline
-- [ ] README, hooks Git (Husky / lint-staged / commitlint), Spotless
+- [x] Monorepo `/backend` + `/frontend`, `.nvmrc` (Node 24)
+- [x] docker-compose : Postgres 16, Redis, MinIO, back, front
+- [x] CI GitHub Actions (build/test/lint back + front, jobs séparés)
+- [x] springdoc + export `openapi.json` ; `openapi-typescript` (`pnpm gen:api`)
+- [x] Coquille Nuxt 4 + PWA installable (`@vite-pwa/nuxt`)
+- [x] Health check `/actuator/health`
+- [x] Flyway baseline
+- [x] README, hooks Git (Husky / lint-staged / commitlint), Spotless
 
 **DoD : `docker compose up` lève la stack, CI verte, PWA installable.**
 
