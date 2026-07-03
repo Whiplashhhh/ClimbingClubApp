@@ -1,0 +1,86 @@
+package app.belay.auth;
+
+import app.belay.auth.dto.RegisterRequest;
+import app.belay.common.ConflictException;
+import app.belay.common.NotFoundException;
+import app.belay.organization.Organization;
+import app.belay.organization.OrganizationRepository;
+import app.belay.user.AppUser;
+import app.belay.user.Role;
+import app.belay.user.UserRepository;
+import app.belay.user.UserStatus;
+import java.text.Normalizer;
+import java.util.Locale;
+import java.util.UUID;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+@Service
+public class AuthService {
+
+    private final UserRepository userRepository;
+    private final OrganizationRepository organizationRepository;
+    private final PasswordEncoder passwordEncoder;
+
+    public AuthService(
+            UserRepository userRepository,
+            OrganizationRepository organizationRepository,
+            PasswordEncoder passwordEncoder) {
+        this.userRepository = userRepository;
+        this.organizationRepository = organizationRepository;
+        this.passwordEncoder = passwordEncoder;
+    }
+
+    @Transactional
+    public AppUser register(RegisterRequest request) {
+        if (request.isCreateMode() == request.isJoinMode()) {
+            throw new IllegalArgumentException("Provide exactly one of createOrganization or joinSlug");
+        }
+        if (userRepository.existsByEmailIgnoreCase(request.email())) {
+            throw new ConflictException("Email already registered");
+        }
+
+        Organization organization;
+        Role role;
+        UserStatus status;
+        if (request.isCreateMode()) {
+            organization = organizationRepository.save(new Organization(
+                    request.createOrganization().name().trim(),
+                    generateSlug(request.createOrganization().name()),
+                    request.createOrganization().climbingType()));
+            role = Role.OWNER;
+            status = UserStatus.ACTIVE;
+        } else {
+            organization = organizationRepository
+                    .findBySlug(request.joinSlug().trim().toLowerCase(Locale.ROOT))
+                    .orElseThrow(() -> new NotFoundException("Unknown organization"));
+            role = Role.MEMBER;
+            status = UserStatus.PENDING;
+        }
+
+        return userRepository.save(new AppUser(
+                organization,
+                request.email().trim().toLowerCase(Locale.ROOT),
+                passwordEncoder.encode(request.password()),
+                request.displayName().trim(),
+                role,
+                status));
+    }
+
+    private String generateSlug(String name) {
+        String base = Normalizer.normalize(name, Normalizer.Form.NFD)
+                .replaceAll("\\p{M}", "")
+                .toLowerCase(Locale.ROOT)
+                .replaceAll("[^a-z0-9]+", "-")
+                .replaceAll("(^-|-$)", "");
+        if (base.isBlank()) {
+            base = "club";
+        }
+        String slug = base;
+        while (organizationRepository.existsBySlug(slug)) {
+            slug = base + "-" + UUID.randomUUID().toString().substring(0, 8);
+        }
+        return slug;
+    }
+}
