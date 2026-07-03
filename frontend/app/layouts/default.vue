@@ -11,7 +11,13 @@ async function onLogout() {
   <div class="min-h-screen bg-gray-50">
     <header class="border-b border-gray-200 bg-white">
       <div class="mx-auto flex max-w-3xl items-center justify-between px-4 py-3">
-        <NuxtLink to="/" class="text-xl font-bold text-indigo-600">Belay</NuxtLink>
+        <div class="flex items-center gap-4">
+          <NuxtLink to="/" class="text-xl font-bold text-indigo-600">Belay</NuxtLink>
+          <nav v-if="auth.isActive" class="flex items-center gap-3 text-sm">
+            <NuxtLink to="/" class="text-gray-600 hover:text-indigo-600">Fil</NuxtLink>
+            <NuxtLink to="/members" class="text-gray-600 hover:text-indigo-600">Membres</NuxtLink>
+          </nav>
+        </div>
         <div v-if="auth.me" class="flex items-center gap-3 text-sm">
           <span class="text-gray-700">{{ auth.me.displayName }}</span>
           <button

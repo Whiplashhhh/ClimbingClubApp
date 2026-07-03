@@ -1,6 +1,9 @@
 spring:
   application:
     name: belay
+  jackson:
+    # Champs null omis du JSON : colle aux types générés (body?: string, jamais null)
+    default-property-inclusion: non-null
   datasource:
     url: ${DB_URL:jdbc:postgresql://localhost:5432/belay}
     username: ${DB_USERNAME:belay}
