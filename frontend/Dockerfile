@@ -4,8 +4,7 @@ RUN corepack enable
 WORKDIR /app
 COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
 COPY frontend/package.json frontend/package.json
-RUN --mount=type=cache,target=/root/.local/share/pnpm/store \
-    pnpm install --frozen-lockfile --ignore-scripts
+RUN pnpm install --frozen-lockfile --ignore-scripts
 COPY frontend frontend
 # La cible du proxy /api est résolue au build (routeRules Nitro)
 ARG NUXT_API_PROXY_TARGET=http://backend:8080

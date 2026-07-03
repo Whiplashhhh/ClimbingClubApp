@@ -1,11 +1,11 @@
-# Étape 1 : build (le wrapper télécharge Maven, ~/.m2 mis en cache par BuildKit)
+# Étape 1 : build — la couche dependency:go-offline est mise en cache tant que le pom ne change pas
 FROM eclipse-temurin:21-jdk AS build
 WORKDIR /app
 COPY .mvn .mvn
 COPY mvnw pom.xml ./
-RUN --mount=type=cache,target=/root/.m2 ./mvnw --batch-mode dependency:go-offline
+RUN ./mvnw --batch-mode dependency:go-offline
 COPY src src
-RUN --mount=type=cache,target=/root/.m2 ./mvnw --batch-mode package -DskipTests -Dspotless.check.skip=true
+RUN ./mvnw --batch-mode package -DskipTests -Dspotless.check.skip=true
 
 # Étape 2 : image d'exécution minimale, utilisateur non-root
 FROM eclipse-temurin:21-jre-alpine
