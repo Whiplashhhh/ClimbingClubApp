@@ -1,0 +1,2 @@
+-- Baseline Flyway : le schéma applicatif arrive avec les migrations suivantes (Phase 1+).
+-- Ce fichier matérialise le point de départ versionné de la base.

@@ -1,0 +1,48 @@
+spring:
+  application:
+    name: belay
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/belay}
+    username: ${DB_USERNAME:belay}
+    password: ${DB_PASSWORD:belay}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+  flyway:
+    enabled: true
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+  session:
+    redis:
+      namespace: "belay:session"
+    timeout: 12h
+
+server:
+  port: 8080
+  servlet:
+    session:
+      cookie:
+        name: BELAY_SESSION
+        http-only: true
+        same-site: lax
+        # true en production (HTTPS) — surchargé par variable d'environnement
+        secure: ${SESSION_COOKIE_SECURE:false}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      probes:
+        enabled: true
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui
