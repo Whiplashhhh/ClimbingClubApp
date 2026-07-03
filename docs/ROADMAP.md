@@ -15,13 +15,13 @@
 **DoD : `docker compose up` lève la stack, CI verte, PWA installable.**
 
 ## Phase 1 — Comptes / orgs / rôles / sécurité
-- [ ] Inscription / connexion, mots de passe bcrypt
-- [ ] Sessions serveur Redis (Spring Session), cookie `HttpOnly`/`Secure`/`SameSite`, CSRF
-- [ ] Création d'organisation ; rattachement utilisateur ↔ org (une seule org) + rôles
-- [ ] Invitations / validation des membres `PENDING`
-- [ ] Autorisation serveur par rôle sur chaque endpoint
-- [ ] **Test anti-IDOR inter-org**
-- [ ] En-têtes de sécurité, `.env.example`
+- [x] Inscription / connexion, mots de passe bcrypt
+- [x] Sessions serveur Redis (Spring Session), cookie `HttpOnly`/`Secure`/`SameSite`, CSRF
+- [x] Création d'organisation ; rattachement utilisateur ↔ org (une seule org) + rôles
+- [x] Invitations / validation des membres `PENDING`
+- [x] Autorisation serveur par rôle sur chaque endpoint
+- [x] **Test anti-IDOR inter-org**
+- [x] En-têtes de sécurité, `.env.example`
 
 **DoD : un membre de A ne peut rien voir de B (prouvé par test).**
 

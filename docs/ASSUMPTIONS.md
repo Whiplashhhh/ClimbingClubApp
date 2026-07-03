@@ -14,3 +14,6 @@ Hypothèses prises faute d'information, avec le défaut le plus raisonnable. À 
   créneau dont le moniteur est le coach. Avant la Phase 3 (pas encore de créneaux), l'audience
   COACH_STUDENTS d'un post est résolue via cette relation et renvoie un fil vide côté élève tant
   qu'aucun créneau n'existe — c'est attendu.
+- **A-006** (2026-07-03) : La stack initiale (copiée d'un autre projet) mentionnait
+  Thymeleaf + openhtmltopdf : aucune fonctionnalité de la spec ne requiert de génération PDF ou
+  de templating serveur → dépendances retirées. À réintroduire via ADR si un besoin réel émerge.
