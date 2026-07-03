@@ -15,23 +15,23 @@
 **DoD : `docker compose up` lève la stack, CI verte, PWA installable.**
 
 ## Phase 1 — Comptes / orgs / rôles / sécurité
-- [ ] Inscription / connexion, mots de passe bcrypt
-- [ ] Sessions serveur Redis (Spring Session), cookie `HttpOnly`/`Secure`/`SameSite`, CSRF
-- [ ] Création d'organisation ; rattachement utilisateur ↔ org (une seule org) + rôles
-- [ ] Invitations / validation des membres `PENDING`
-- [ ] Autorisation serveur par rôle sur chaque endpoint
-- [ ] **Test anti-IDOR inter-org**
-- [ ] En-têtes de sécurité, `.env.example`
+- [x] Inscription / connexion, mots de passe bcrypt
+- [x] Sessions serveur Redis (Spring Session), cookie `HttpOnly`/`Secure`/`SameSite`, CSRF
+- [x] Création d'organisation ; rattachement utilisateur ↔ org (une seule org) + rôles
+- [x] Invitations / validation des membres `PENDING`
+- [x] Autorisation serveur par rôle sur chaque endpoint
+- [x] **Test anti-IDOR inter-org**
+- [x] En-têtes de sécurité, `.env.example`
 
 **DoD : un membre de A ne peut rien voir de B (prouvé par test).**
 
 ## Phase 2 — Fil d'accueil (infos)
-- [ ] Post type INFO / CANCELLATION / POSTER, audience ORG vs COACH_STUDENTS
-- [ ] Agrégation du fil par utilisateur
-- [ ] Upload de poster (MinIO, validation MIME par contenu, URLs signées)
-- [ ] UI accueil (fil)
-- [ ] Tests e2e du chemin critique
-- [ ] Skill `.claude/skills/full-stack-slice/SKILL.md` (recette tranche verticale)
+- [x] Post type INFO / CANCELLATION / POSTER, audience ORG vs COACH_STUDENTS
+- [x] Agrégation du fil par utilisateur
+- [x] Upload de poster (MinIO, validation MIME par contenu, URLs signées)
+- [x] UI accueil (fil)
+- [x] Tests e2e du chemin critique (intégration API — navigateur : voir A-008)
+- [x] Skill `.claude/skills/full-stack-slice/SKILL.md` (recette tranche verticale)
 
 ## Phase 3 — Créneaux & groupes
 - [ ] Slots récurrents, rattachement des membres, groupe dérivé

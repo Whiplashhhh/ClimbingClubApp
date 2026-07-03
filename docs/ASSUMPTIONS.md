@@ -14,3 +14,12 @@ Hypothèses prises faute d'information, avec le défaut le plus raisonnable. À 
   créneau dont le moniteur est le coach. Avant la Phase 3 (pas encore de créneaux), l'audience
   COACH_STUDENTS d'un post est résolue via cette relation et renvoie un fil vide côté élève tant
   qu'aucun créneau n'existe — c'est attendu.
+- **A-006** (2026-07-03) : La stack initiale (copiée d'un autre projet) mentionnait
+  Thymeleaf + openhtmltopdf : aucune fonctionnalité de la spec ne requiert de génération PDF ou
+  de templating serveur → dépendances retirées. À réintroduire via ADR si un besoin réel émerge.
+- **A-007** (2026-07-03) : Affiches du fil : formats image JPEG/PNG/WebP uniquement (détectés
+  par octets magiques), 5 Mo max. Suffisant pour des affiches de club ; à élargir si besoin réel.
+- **A-008** (2026-07-03) : « Tests e2e du chemin critique » = tests d'intégration API bout en
+  bout (Testcontainers : Postgres + Redis + MinIO réels, HTTP réel, CSRF réel) + tests de
+  composants Vitest. Les e2e navigateur Playwright seront introduits quand l'UI aura assez de
+  surface pour les rentabiliser (Phase 7 au plus tard).

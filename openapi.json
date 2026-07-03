@@ -9,6 +9,9 @@
     "url" : "/"
   } ],
   "tags" : [ {
+    "name" : "feed",
+    "description" : "Home feed: posts with an audience, aggregated per user (tenant-scoped)"
+  }, {
     "name" : "auth",
     "description" : "Registration, login and session management"
   }, {
@@ -16,6 +19,103 @@
     "description" : "Organization members management (tenant-scoped)"
   } ],
   "paths" : {
+    "/api/posts" : {
+      "post" : {
+        "tags" : [ "feed" ],
+        "summary" : "Publish an INFO or CANCELLATION post (ORG audience: admins; COACH_STUDENTS: coaches)",
+        "operationId" : "create",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/CreatePostRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "403" : {
+            "description" : "Role not allowed to publish to the requested audience",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/FeedPostResponse"
+                }
+              }
+            }
+          },
+          "201" : {
+            "description" : "Created",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/FeedPostResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/posts/poster" : {
+      "post" : {
+        "tags" : [ "feed" ],
+        "summary" : "Publish a POSTER post with an image (content-sniffed JPEG/PNG/WebP, max 5 MB)",
+        "operationId" : "createPoster",
+        "requestBody" : {
+          "content" : {
+            "multipart/form-data" : {
+              "schema" : {
+                "type" : "object",
+                "properties" : {
+                  "meta" : {
+                    "$ref" : "#/components/schemas/CreatePosterRequest"
+                  },
+                  "image" : {
+                    "type" : "string",
+                    "format" : "binary"
+                  }
+                },
+                "required" : [ "image", "meta" ]
+              }
+            }
+          }
+        },
+        "responses" : {
+          "400" : {
+            "description" : "File content is not a supported image",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/FeedPostResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Role not allowed to publish to the requested audience",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/FeedPostResponse"
+                }
+              }
+            }
+          },
+          "201" : {
+            "description" : "Created",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/FeedPostResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/members/{memberId}/approve" : {
       "post" : {
         "tags" : [ "members" ],
@@ -224,6 +324,44 @@
         }
       }
     },
+    "/api/feed" : {
+      "get" : {
+        "tags" : [ "feed" ],
+        "summary" : "Aggregated feed of the caller: ORG posts plus COACH_STUDENTS posts they can see",
+        "operationId" : "feed",
+        "parameters" : [ {
+          "name" : "page",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32",
+            "default" : 0
+          }
+        }, {
+          "name" : "size",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32",
+            "default" : 20
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/FeedPageResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/auth/me" : {
       "get" : {
         "tags" : [ "auth" ],
@@ -272,10 +410,121 @@
           }
         }
       }
+    },
+    "/api/posts/{postId}" : {
+      "delete" : {
+        "tags" : [ "feed" ],
+        "summary" : "Delete a post (author or admins)",
+        "operationId" : "delete",
+        "parameters" : [ {
+          "name" : "postId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "404" : {
+            "description" : "Post not found in the caller's organization"
+          },
+          "204" : {
+            "description" : "No Content"
+          }
+        }
+      }
     }
   },
   "components" : {
     "schemas" : {
+      "CreatePostRequest" : {
+        "type" : "object",
+        "properties" : {
+          "type" : {
+            "type" : "string",
+            "description" : "INFO or CANCELLATION — posters go through POST /api/posts/poster",
+            "enum" : [ "INFO", "CANCELLATION", "POSTER" ]
+          },
+          "audience" : {
+            "type" : "string",
+            "enum" : [ "ORG", "COACH_STUDENTS" ]
+          },
+          "title" : {
+            "type" : "string",
+            "maxLength" : 200,
+            "minLength" : 0
+          },
+          "body" : {
+            "type" : "string",
+            "maxLength" : 5000,
+            "minLength" : 0
+          }
+        },
+        "required" : [ "audience", "title", "type" ]
+      },
+      "FeedPostResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "type" : {
+            "type" : "string",
+            "enum" : [ "INFO", "CANCELLATION", "POSTER" ]
+          },
+          "audience" : {
+            "type" : "string",
+            "enum" : [ "ORG", "COACH_STUDENTS" ]
+          },
+          "title" : {
+            "type" : "string"
+          },
+          "body" : {
+            "type" : "string"
+          },
+          "imageUrl" : {
+            "type" : "string",
+            "description" : "Short-lived signed URL of the poster image (POSTER posts only)"
+          },
+          "authorId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "authorDisplayName" : {
+            "type" : "string"
+          },
+          "authorRole" : {
+            "type" : "string",
+            "enum" : [ "OWNER", "ADMIN", "COACH", "MEMBER" ]
+          },
+          "createdAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        }
+      },
+      "CreatePosterRequest" : {
+        "type" : "object",
+        "properties" : {
+          "audience" : {
+            "type" : "string",
+            "enum" : [ "ORG", "COACH_STUDENTS" ]
+          },
+          "title" : {
+            "type" : "string",
+            "maxLength" : 200,
+            "minLength" : 0
+          },
+          "body" : {
+            "type" : "string",
+            "maxLength" : 5000,
+            "minLength" : 0
+          }
+        },
+        "required" : [ "audience", "title" ]
+      },
       "MemberResponse" : {
         "type" : "object",
         "properties" : {
@@ -428,6 +677,28 @@
           },
           "email" : {
             "type" : "string"
+          }
+        }
+      },
+      "FeedPageResponse" : {
+        "type" : "object",
+        "properties" : {
+          "items" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/FeedPostResponse"
+            }
+          },
+          "page" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "size" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "hasNext" : {
+            "type" : "boolean"
           }
         }
       },

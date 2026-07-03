@@ -4,6 +4,40 @@
  */
 
 export interface paths {
+    "/api/posts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Publish an INFO or CANCELLATION post (ORG audience: admins; COACH_STUDENTS: coaches) */
+        post: operations["create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/posts/poster": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Publish a POSTER post with an image (content-sniffed JPEG/PNG/WebP, max 5 MB) */
+        post: operations["createPoster"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/members/{memberId}/approve": {
         parameters: {
             query?: never;
@@ -106,6 +140,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/feed": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Aggregated feed of the caller: ORG posts plus COACH_STUDENTS posts they can see */
+        get: operations["feed"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/auth/me": {
         parameters: {
             query?: never;
@@ -140,10 +191,63 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/posts/{postId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete a post (author or admins) */
+        delete: operations["delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        CreatePostRequest: {
+            /**
+             * @description INFO or CANCELLATION — posters go through POST /api/posts/poster
+             * @enum {string}
+             */
+            type: "INFO" | "CANCELLATION" | "POSTER";
+            /** @enum {string} */
+            audience: "ORG" | "COACH_STUDENTS";
+            title: string;
+            body?: string;
+        };
+        FeedPostResponse: {
+            /** Format: uuid */
+            id?: string;
+            /** @enum {string} */
+            type?: "INFO" | "CANCELLATION" | "POSTER";
+            /** @enum {string} */
+            audience?: "ORG" | "COACH_STUDENTS";
+            title?: string;
+            body?: string;
+            /** @description Short-lived signed URL of the poster image (POSTER posts only) */
+            imageUrl?: string;
+            /** Format: uuid */
+            authorId?: string;
+            authorDisplayName?: string;
+            /** @enum {string} */
+            authorRole?: "OWNER" | "ADMIN" | "COACH" | "MEMBER";
+            /** Format: date-time */
+            createdAt?: string;
+        };
+        CreatePosterRequest: {
+            /** @enum {string} */
+            audience: "ORG" | "COACH_STUDENTS";
+            title: string;
+            body?: string;
+        };
         MemberResponse: {
             /** Format: uuid */
             id?: string;
@@ -201,6 +305,14 @@ export interface components {
             displayName?: string;
             email?: string;
         };
+        FeedPageResponse: {
+            items?: components["schemas"]["FeedPostResponse"][];
+            /** Format: int32 */
+            page?: number;
+            /** Format: int32 */
+            size?: number;
+            hasNext?: boolean;
+        };
         CsrfToken: {
             parameterName?: string;
             token?: string;
@@ -215,6 +327,85 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreatePostRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["FeedPostResponse"];
+                };
+            };
+            /** @description Role not allowed to publish to the requested audience */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["FeedPostResponse"];
+                };
+            };
+        };
+    };
+    createPoster: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "multipart/form-data": {
+                    meta: components["schemas"]["CreatePosterRequest"];
+                    /** Format: binary */
+                    image: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["FeedPostResponse"];
+                };
+            };
+            /** @description File content is not a supported image */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["FeedPostResponse"];
+                };
+            };
+            /** @description Role not allowed to publish to the requested audience */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["FeedPostResponse"];
+                };
+            };
+        };
+    };
     approve: {
         parameters: {
             query?: never;
@@ -387,6 +578,29 @@ export interface operations {
             };
         };
     };
+    feed: {
+        parameters: {
+            query?: {
+                page?: number;
+                size?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["FeedPageResponse"];
+                };
+            };
+        };
+    };
     me: {
         parameters: {
             query?: never;
@@ -428,6 +642,33 @@ export interface operations {
                         [key: string]: string;
                     };
                 };
+            };
+        };
+    };
+    delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                postId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Post not found in the caller's organization */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

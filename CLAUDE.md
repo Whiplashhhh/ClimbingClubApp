@@ -24,9 +24,9 @@ invariant de sécurité, pas une option.**
 ## 3. Stack (versions épinglées — ne dévie pas sans ADR)
 
 **Back** : Java 21, Spring Boot 3.5.x, Maven (`./mvnw`), PostgreSQL 16+, Flyway, Spring Data
-JPA/Hibernate, Spring Security, springdoc-openapi, Bean Validation, Thymeleaf,
-openhtmltopdf, Actuator, Spotless +
+JPA/Hibernate, Spring Security, springdoc-openapi, Bean Validation, Actuator, Spotless +
 Palantir Java Format, JUnit 5 + Testcontainers, Docker.
+(Thymeleaf/openhtmltopdf retirés : aucun besoin de génération PDF dans la spec — voir A-006.)
 
 **Front** : Nuxt 4 (Vue 3, SSR), TypeScript `strict`, Pinia, `useFetch`/`$fetch`,
 `openapi-typescript` + Zod, Tailwind CSS v4 + shadcn-vue (Reka UI) + Lucide, VueUse,
