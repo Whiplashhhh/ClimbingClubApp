@@ -7,7 +7,7 @@ murs et voies ; les grimpeurs enregistrent leurs séances ; présidents et monit
 et sondages ciblés.
 
 Docs : [spec produit](docs/PRODUCT_SPEC.md) · [roadmap](docs/ROADMAP.md) · [ADRs](docs/adr/) ·
-[état d'avancement](docs/STATUS.md)
+[état d'avancement](docs/STATUS.md) · [déploiement auto-hébergé](docs/DEPLOY.md)
 
 ## Stack
 
