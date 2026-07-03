@@ -2,9 +2,11 @@ package app.belay.common;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
 @RestControllerAdvice
 public class RestExceptionHandler {
@@ -28,5 +30,15 @@ public class RestExceptionHandler {
     @ExceptionHandler(IllegalArgumentException.class)
     ProblemDetail handleIllegalArgument(IllegalArgumentException e) {
         return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, e.getMessage());
+    }
+
+    @ExceptionHandler(AccessDeniedException.class)
+    ProblemDetail handleAccessDenied(AccessDeniedException e) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN, e.getMessage());
+    }
+
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    ProblemDetail handleMaxUploadSize(MaxUploadSizeExceededException e) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.PAYLOAD_TOO_LARGE, "Uploaded file is too large");
     }
 }

@@ -3,7 +3,9 @@ package app.belay;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.context.annotation.Bean;
+import org.springframework.test.context.DynamicPropertyRegistrar;
 import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.containers.MinIOContainer;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.utility.DockerImageName;
 
@@ -20,5 +22,20 @@ public class TestcontainersConfiguration {
     @ServiceConnection(name = "redis")
     GenericContainer<?> redisContainer() {
         return new GenericContainer<>(DockerImageName.parse("redis:7-alpine")).withExposedPorts(6379);
+    }
+
+    @Bean
+    MinIOContainer minioContainer() {
+        return new MinIOContainer(DockerImageName.parse("minio/minio:latest"));
+    }
+
+    // Pas de @ServiceConnection pour MinIO : on injecte les propriétés custom belay.storage.*
+    @Bean
+    DynamicPropertyRegistrar storageProperties(MinIOContainer minio) {
+        return registry -> {
+            registry.add("belay.storage.endpoint", minio::getS3URL);
+            registry.add("belay.storage.access-key", minio::getUserName);
+            registry.add("belay.storage.secret-key", minio::getPassword);
+        };
     }
 }

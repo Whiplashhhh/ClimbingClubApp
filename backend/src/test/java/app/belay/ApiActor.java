@@ -7,6 +7,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.util.MultiValueMap;
 
 /**
  * Client de test représentant un utilisateur avec son propre cookie jar (session + CSRF), comme
@@ -27,6 +28,20 @@ public class ApiActor {
 
     public <T> ResponseEntity<T> post(String path, Object body, Class<T> type) {
         return exchange(HttpMethod.POST, path, body, type, csrfToken());
+    }
+
+    public <T> ResponseEntity<T> delete(String path, Class<T> type) {
+        return exchange(HttpMethod.DELETE, path, null, type, csrfToken());
+    }
+
+    public <T> ResponseEntity<T> postMultipart(String path, MultiValueMap<String, ?> parts, Class<T> type) {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.MULTIPART_FORM_DATA);
+        String token = csrfToken();
+        if (token != null) {
+            headers.set("X-XSRF-TOKEN", token);
+        }
+        return rest.exchange(baseUrl + path, HttpMethod.POST, new HttpEntity<>(parts, headers), type);
     }
 
     public <T> ResponseEntity<T> postWithoutCsrf(String path, Object body, Class<T> type) {
