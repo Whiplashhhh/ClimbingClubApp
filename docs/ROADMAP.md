@@ -26,12 +26,12 @@
 **DoD : un membre de A ne peut rien voir de B (prouvé par test).**
 
 ## Phase 2 — Fil d'accueil (infos)
-- [ ] Post type INFO / CANCELLATION / POSTER, audience ORG vs COACH_STUDENTS
-- [ ] Agrégation du fil par utilisateur
-- [ ] Upload de poster (MinIO, validation MIME par contenu, URLs signées)
-- [ ] UI accueil (fil)
-- [ ] Tests e2e du chemin critique
-- [ ] Skill `.claude/skills/full-stack-slice/SKILL.md` (recette tranche verticale)
+- [x] Post type INFO / CANCELLATION / POSTER, audience ORG vs COACH_STUDENTS
+- [x] Agrégation du fil par utilisateur
+- [x] Upload de poster (MinIO, validation MIME par contenu, URLs signées)
+- [x] UI accueil (fil)
+- [x] Tests e2e du chemin critique (intégration API — navigateur : voir A-008)
+- [x] Skill `.claude/skills/full-stack-slice/SKILL.md` (recette tranche verticale)
 
 ## Phase 3 — Créneaux & groupes
 - [ ] Slots récurrents, rattachement des membres, groupe dérivé
