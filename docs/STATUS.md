@@ -1,6 +1,6 @@
 # État d'avancement — Belay
 
-> Mis à jour : 2026-07-04 (Phase 3 partie A : créneaux & groupes).
+> Mis à jour : 2026-07-04 (Phase 3 complète : créneaux, groupes, annulations, notifications).
 
 ## Fait (mergé dans `main`, CI verte)
 
@@ -39,16 +39,24 @@
   rattachements (A-005 refermée)**, page `/slots` (planning, création, gestion du groupe),
   sélecteur de rôle sur `/members`, tests intégration + vitest.
 
+- **Phase 3 partie B — annulations & notifications in-app** : `SlotChange` (annuler/décaler UNE
+  séance à une date, garde-fous : jour du créneau, unicité, heure requise si décalée — V5),
+  domaine `Notification` générique (message FR, lu/non-lu), le groupe + le moniteur (sauf
+  l'auteur) sont notifiés ; cloche avec pastille dans l'en-tête, page `/notifications`
+  (tout marqué lu à l'ouverture), formulaire annuler/décaler + « rétablir » sur les cartes de
+  créneau. NB : pas de post CANCELLATION automatique — le moniteur peut toujours en publier un
+  manuellement (choix : éviter de publier « au nom de » quelqu'un).
+
 ## En cours
 
-- Rien — la partie A de la Phase 3 se termine avec cette PR.
+- Rien — la Phase 3 est complète.
 
 ## Prochaines étapes (dans l'ordre de la ROADMAP)
 
-1. **Phase 3 partie B** : annulation / décalage d'une séance de créneau (à une date donnée) →
-   notifications in-app pour le groupe (cloche + pastille) + post CANCELLATION automatique.
-2. **Phase 4 — Voies & murs** (secteurs, voies, overlay d'annotations en lecture).
-3. Phases 5-7 (séances & social, sondages & messagerie, finitions PWA).
+1. **Phase 4 — Voies & murs** (secteurs, voies : nom/cotation/type/photo, overlay d'annotations
+   en lecture).
+2. Phases 5-7 (séances & social, sondages & messagerie, finitions PWA — dont push web qui
+   remplacera le rafraîchissement de la pastille à la navigation).
 
 ## Points d'attention
 
