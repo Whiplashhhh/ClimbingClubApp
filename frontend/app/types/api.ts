@@ -22,6 +22,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/routes/{routeId}/holds": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Replace the route's hold annotations (admins or its creator) */
+        put: operations["updateHolds"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/slots": {
         parameters: {
             query?: never;
@@ -68,6 +85,41 @@ export interface paths {
         put?: never;
         /** Cancel or move one session at a given date — notifies the slot's group in-app */
         post: operations["createChange"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/sectors": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List the club's sectors with their routes, photos served through signed URLs */
+        get: operations["listSectors"];
+        put?: never;
+        /** Create a sector with an optional wall photo (admins) */
+        post: operations["createSector"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/routes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create a route in a sector, with an optional photo (coaches and admins) */
+        post: operations["createRoute"];
         delete?: never;
         options?: never;
         head?: never;
@@ -315,6 +367,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/sectors/{sectorId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete an empty sector (admins) */
+        delete: operations["deleteSector"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/routes/{routeId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete a route (admins or its creator) */
+        delete: operations["deleteRoute"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/posts/{postId}": {
         parameters: {
             query?: never;
@@ -387,6 +473,35 @@ export interface components {
             /** @description Upcoming cancelled/moved sessions */
             changes?: components["schemas"]["SlotChangeResponse"][];
         };
+        /** @description Highlighted hold, in coordinates relative to the photo (0..1) */
+        HoldDto: {
+            /** Format: double */
+            x?: number;
+            /** Format: double */
+            y?: number;
+        };
+        UpdateHoldsRequest: {
+            holds: components["schemas"]["HoldDto"][];
+        };
+        RouteResponse: {
+            /** Format: uuid */
+            id?: string;
+            /** Format: uuid */
+            sectorId?: string;
+            name?: string;
+            grade?: string;
+            /** @enum {string} */
+            climbType?: "BOULDER" | "ROPE";
+            /** @description Short-lived signed URL of the route photo */
+            photoUrl?: string;
+            /** @description Highlighted holds, relative coordinates (0..1), overlay-rendered */
+            holds?: components["schemas"]["HoldDto"][];
+            /** Format: uuid */
+            createdById?: string;
+            createdByDisplayName?: string;
+            /** Format: date-time */
+            createdAt?: string;
+        };
         CreateSlotRequest: {
             name: string;
             /** @enum {string} */
@@ -423,6 +538,25 @@ export interface components {
              */
             newStartTime?: string;
             note?: string;
+        };
+        CreateSectorRequest: {
+            name: string;
+        };
+        SectorResponse: {
+            /** Format: uuid */
+            id?: string;
+            name?: string;
+            /** @description Short-lived signed URL of the wall photo */
+            photoUrl?: string;
+            routes?: components["schemas"]["RouteResponse"][];
+        };
+        CreateRouteRequest: {
+            /** Format: uuid */
+            sectorId: string;
+            name: string;
+            grade: string;
+            /** @enum {string} */
+            climbType: "BOULDER" | "ROPE";
         };
         CreatePostRequest: {
             /** @enum {string} */
@@ -607,6 +741,32 @@ export interface operations {
             };
         };
     };
+    updateHolds: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                routeId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateHoldsRequest"];
+            };
+        };
+        responses: {
+            /** @description Route not found in the caller's organization */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["RouteResponse"];
+                };
+            };
+        };
+    };
     listSlots: {
         parameters: {
             query?: never;
@@ -762,6 +922,91 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["SlotResponse"];
+                };
+            };
+        };
+    };
+    listSectors: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["SectorResponse"][];
+                };
+            };
+        };
+    };
+    createSector: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "multipart/form-data": {
+                    meta: components["schemas"]["CreateSectorRequest"];
+                    /** Format: binary */
+                    photo?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["SectorResponse"];
+                };
+            };
+        };
+    };
+    createRoute: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "multipart/form-data": {
+                    meta: components["schemas"]["CreateRouteRequest"];
+                    /** Format: binary */
+                    photo?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["RouteResponse"];
+                };
+            };
+            /** @description Sector not found in the caller's organization */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["RouteResponse"];
                 };
             };
         };
@@ -1134,6 +1379,67 @@ export interface operations {
                 content: {
                     "*/*": components["schemas"]["SlotResponse"];
                 };
+            };
+        };
+    };
+    deleteSector: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                sectorId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Sector not found in the caller's organization */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description The sector still has routes */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    deleteRoute: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                routeId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Route not found in the caller's organization */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

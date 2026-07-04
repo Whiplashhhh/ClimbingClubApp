@@ -39,8 +39,8 @@
 - [x] Annulation / décalage + notification in-app
 
 ## Phase 4 — Voies & murs
-- [ ] Secteurs, voies (nom/cotation/type/photo), rattachement, affichage
-- [ ] Overlay d'annotations en lecture
+- [x] Secteurs, voies (nom/cotation/type/photo), rattachement, affichage
+- [x] Overlay d'annotations en lecture (l'éditeur reste en Phase 7)
 
 ## Phase 5 — Séances & social
 - [ ] Séances + ascensions (note, prise max, temps, assureur)
