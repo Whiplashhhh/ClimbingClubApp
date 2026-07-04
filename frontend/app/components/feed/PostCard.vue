@@ -24,7 +24,11 @@ const createdAtLabel = computed(() =>
 </script>
 
 <template>
-  <article class="flex flex-col gap-2 rounded-lg border border-gray-200 bg-white p-4">
+  <!-- Un cours annulé est important : la carte entière est mise en évidence -->
+  <article
+    class="flex flex-col gap-2 rounded-lg border p-4"
+    :class="post.type === 'CANCELLATION' ? 'border-red-300 bg-red-50' : 'border-gray-200 bg-white'"
+  >
     <div class="flex items-center justify-between gap-2">
       <div class="flex items-center gap-2">
         <span class="rounded px-2 py-0.5 text-xs" :class="typeClasses[post.type]">

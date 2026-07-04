@@ -73,6 +73,7 @@ describe('slots page', () => {
     auth.initialized = true
 
     wrapper = await mountSuspended(SlotsPage)
+    expect(wrapper.find('[data-testid="week-agenda"]').exists()).toBe(true)
     expect(wrapper.find('[data-testid="slot-form"]').exists()).toBe(true)
     expect(wrapper.text()).toContain('Ados jeudi')
     expect(wrapper.text()).toContain('Jeudi · 18:00 · 90 min')
@@ -95,6 +96,7 @@ describe('slots page', () => {
     auth.initialized = true
 
     wrapper = await mountSuspended(SlotsPage)
+    expect(wrapper.find('[data-testid="week-agenda"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="slot-form"]').exists()).toBe(false)
     expect(wrapper.text()).toContain('Ados jeudi')
     // Membre du créneau → badge et séances annulées visibles, mais pas de gestion
