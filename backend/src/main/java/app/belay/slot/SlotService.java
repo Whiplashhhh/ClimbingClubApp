@@ -6,6 +6,10 @@ import app.belay.common.NotFoundException;
 import app.belay.notification.NotificationService;
 import app.belay.notification.NotificationType;
 import app.belay.organization.OrganizationRepository;
+import app.belay.post.Post;
+import app.belay.post.PostAudience;
+import app.belay.post.PostService;
+import app.belay.post.PostType;
 import app.belay.slot.dto.AddSlotMemberRequest;
 import app.belay.slot.dto.CreateSlotChangeRequest;
 import app.belay.slot.dto.CreateSlotRequest;
@@ -42,6 +46,7 @@ public class SlotService {
     private final UserRepository userRepository;
     private final OrganizationRepository organizationRepository;
     private final NotificationService notificationService;
+    private final PostService postService;
 
     public SlotService(
             SlotRepository slotRepository,
@@ -49,13 +54,15 @@ public class SlotService {
             SlotChangeRepository changeRepository,
             UserRepository userRepository,
             OrganizationRepository organizationRepository,
-            NotificationService notificationService) {
+            NotificationService notificationService,
+            PostService postService) {
         this.slotRepository = slotRepository;
         this.membershipRepository = membershipRepository;
         this.changeRepository = changeRepository;
         this.userRepository = userRepository;
         this.organizationRepository = organizationRepository;
         this.notificationService = notificationService;
+        this.postService = postService;
     }
 
     /** Planning du club, trié par jour puis heure, avec le groupe et les séances modifiées à venir. */
@@ -172,6 +179,7 @@ public class SlotService {
                 request.note(),
                 userRepository.getReferenceById(principal.id())));
         notifyGroup(principal, slot, change);
+        publishToFeed(slot, change);
         return toResponse(slot);
     }
 
@@ -181,6 +189,10 @@ public class SlotService {
         SlotChange change = changeRepository
                 .findByIdAndSlotId(changeId, slotId)
                 .orElseThrow(() -> new NotFoundException("Change not found"));
+        // Séance rétablie → le post automatique disparaît du fil
+        if (change.getPost() != null) {
+            postService.deleteSystemPost(change.getPost());
+        }
         changeRepository.delete(change);
         return toResponse(slot);
     }
@@ -193,11 +205,7 @@ public class SlotService {
         recipients.add(slot.getCoach());
         recipients.removeIf(user -> user.getId().equals(actor.id()));
 
-        String when = FR_DATE.format(change.getDate());
-        String message = change.getAction() == SlotChangeAction.CANCELLED
-                ? "Séance « %s » du %s annulée".formatted(slot.getName(), when)
-                : "Séance « %s » du %s décalée à %s"
-                        .formatted(slot.getName(), when, FR_TIME.format(change.getNewStartTime()));
+        String message = changeHeadline(slot, change);
         if (change.getNote() != null && !change.getNote().isBlank()) {
             message += " — " + change.getNote();
         }
@@ -205,6 +213,29 @@ public class SlotService {
                 ? NotificationType.SLOT_CANCELLED
                 : NotificationType.SLOT_MOVED;
         notificationService.notifyAll(slot.getOrganization(), recipients, type, message);
+    }
+
+    /**
+     * L'annulation apparaît aussi dans le fil des élèves : post CANCELLATION publié au nom du
+     * moniteur du créneau (l'audience COACH_STUDENTS est résolue via ses créneaux), retiré si la
+     * séance est rétablie.
+     */
+    private void publishToFeed(Slot slot, SlotChange change) {
+        Post post = postService.createSystemPost(
+                slot.getCoach(),
+                PostType.CANCELLATION,
+                PostAudience.COACH_STUDENTS,
+                changeHeadline(slot, change),
+                change.getNote());
+        change.setPost(post);
+    }
+
+    private String changeHeadline(Slot slot, SlotChange change) {
+        String when = FR_DATE.format(change.getDate());
+        return change.getAction() == SlotChangeAction.CANCELLED
+                ? "Séance « %s » du %s annulée".formatted(slot.getName(), when)
+                : "Séance « %s » du %s décalée à %s"
+                        .formatted(slot.getName(), when, FR_TIME.format(change.getNewStartTime()));
     }
 
     /** Scope tenancy (hors org → 404) puis autorisation : admins, ou le moniteur du créneau. */

@@ -1,6 +1,7 @@
 package app.belay.slot;
 
 import app.belay.organization.Organization;
+import app.belay.post.Post;
 import app.belay.user.AppUser;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -53,6 +54,11 @@ public class SlotChange {
     @JoinColumn(name = "created_by", nullable = false)
     private AppUser createdBy;
 
+    /** Post « Cours annulé » publié automatiquement dans le fil (retiré si la séance est rétablie). */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "post_id")
+    private Post post;
+
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
@@ -102,5 +108,13 @@ public class SlotChange {
 
     public String getNote() {
         return note;
+    }
+
+    public Post getPost() {
+        return post;
+    }
+
+    public void setPost(Post post) {
+        this.post = post;
     }
 }
