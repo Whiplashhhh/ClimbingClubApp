@@ -129,6 +129,13 @@ async function onLogout() {
             Créneaux
           </NuxtLink>
           <NuxtLink
+            to="/routes"
+            class="text-gray-600 hover:text-indigo-600"
+            exact-active-class="font-semibold text-indigo-600"
+          >
+            Voies
+          </NuxtLink>
+          <NuxtLink
             to="/members"
             class="text-gray-600 hover:text-indigo-600"
             exact-active-class="font-semibold text-indigo-600"

@@ -31,3 +31,7 @@ Hypothèses prises faute d'information, avec le défaut le plus raisonnable. À 
   = titre + texte + 0..4 images (5 Mo max chacune). Les posts générés par une annulation/un
   décalage de séance portent `important` (mise en évidence rouge) et sont épinglés en tête du
   fil jusqu'à la fin du jour (UTC) de la séance concernée, puis redescendent dans le flux normal.
+- **A-011** (2026-07-04) : Cartographie des murs : les **secteurs** sont gérés par les admins
+  (structure du club), les **voies** par les moniteurs et admins (créateur-ou-admin pour
+  modifier/supprimer). Les prises sont des points relatifs (0..1) en JSONB, rendues en overlay
+  SVG — l'éditeur graphique arrive en Phase 7, l'API PUT /holds existe déjà.

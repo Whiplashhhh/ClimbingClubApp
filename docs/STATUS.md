@@ -1,6 +1,6 @@
 # État d'avancement — Belay
 
-> Mis à jour : 2026-07-04 (Phase 3 complète + retours de test n°2).
+> Mis à jour : 2026-07-04 (Phases 3 et 4 complètes + retours de test n°2 et n°3).
 
 ## Fait (mergé dans `main`, CI verte)
 
@@ -55,16 +55,28 @@
   premier plan + 60 s) sur fil/notifications/créneaux/pastille + boutons ↻ manuels, en
   attendant le push web (Phase 7).
 
+- **Retours de test n°3 — posts simplifiés** : plus de catégories (V7) — un post = titre +
+  texte + 0..4 images (`post_image`, contenus vérifiés, URLs signées) ; les annulations de
+  séance sont `important` (carte rouge) et **épinglées en tête du fil** jusqu'à la fin du jour
+  de la séance (`pinned_until`), puis redescendent (A-010).
+
+- **Phase 4 — Voies & murs** : `Sector` (photo de mur optionnelle) + `Route` (nom, cotation
+  libre A-003, bloc/voie, photo, **annotations de prises en JSONB**, coordonnées relatives
+  0..1 — A-011) — V8 ; API scopée (secteurs : admins ; voies : moniteurs/admins,
+  créateur-ou-admin en mutation ; PUT /holds) ; page `/routes` (cartographie par secteur,
+  formulaires, **overlay SVG des prises en lecture** avec bouton afficher/masquer — l'éditeur
+  d'annotations reste en Phase 7) ; tests intégration + vitest.
+
 ## En cours
 
-- Rien — la Phase 3 est complète.
+- Rien — les Phases 0 à 4 sont complètes.
 
 ## Prochaines étapes (dans l'ordre de la ROADMAP)
 
-1. **Phase 4 — Voies & murs** (secteurs, voies : nom/cotation/type/photo, overlay d'annotations
-   en lecture).
-2. Phases 5-7 (séances & social, sondages & messagerie, finitions PWA — dont push web qui
-   remplacera le rafraîchissement de la pastille à la navigation).
+1. **Phase 5 — Séances & social** : séances + ascensions (note, prise max, temps, assureur),
+   amis, fil d'amis, confidentialité.
+2. **Phase 6 — Sondages & messagerie**, puis **Phase 7 — finitions PWA** (push web, éditeur
+   d'annotations de prises, itinéraire, rate limiting, RGPD, page profil).
 
 ## Points d'attention
 
