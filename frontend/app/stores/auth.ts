@@ -46,8 +46,13 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   async function logout(): Promise<void> {
-    await apiFetch('/api/auth/logout', { method: 'POST' })
-    me.value = null
+    // L'état local est vidé même si l'appel échoue : l'UI ne doit jamais rester
+    // « bloquée connectée » (au pire la session serveur expirera d'elle-même).
+    try {
+      await apiFetch('/api/auth/logout', { method: 'POST' })
+    } finally {
+      me.value = null
+    }
   }
 
   return { me, initialized, isAdmin, isActive, fetchMe, login, register, logout }

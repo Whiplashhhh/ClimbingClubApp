@@ -53,10 +53,13 @@ await useAsyncData('members', async () => {
     </section>
 
     <template v-else>
-      <section v-if="auth.isAdmin && pendingMembers.length > 0">
+      <section v-if="auth.isAdmin">
         <h2 class="mb-2 text-lg font-semibold text-gray-900">Demandes d'adhésion</h2>
         <p v-if="actionError" class="mb-2 text-sm text-red-600">{{ actionError }}</p>
-        <ul class="flex flex-col gap-2">
+        <p v-if="pendingMembers.length === 0" class="text-sm text-gray-500">
+          Aucune demande en attente.
+        </p>
+        <ul v-else class="flex flex-col gap-2">
           <li
             v-for="pending in pendingMembers"
             :key="pending.id"

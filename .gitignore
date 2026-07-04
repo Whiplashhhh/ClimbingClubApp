@@ -20,3 +20,6 @@ node_modules/
 
 # Logs
 *.log
+
+# Surcharges locales de docker-compose (ports custom, etc.)
+docker-compose.override.yml

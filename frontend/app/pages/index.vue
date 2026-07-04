@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { z } from 'zod'
+import { pendingMemberSchema } from '~/schemas/auth'
 import { feedPageSchema, type FeedPost } from '~/schemas/feed'
 
 useHead({ title: 'Fil — Belay' })
@@ -41,9 +43,24 @@ function canDelete(post: FeedPost): boolean {
   return auth.isAdmin || post.authorId === auth.me?.id
 }
 
+// Rappel non bloquant pour les admins : demandes d'adhésion à traiter sur /members
+const pendingCount = ref(0)
+
+async function refreshPendingCount() {
+  if (!auth.isAdmin) return
+  try {
+    const pending = z
+      .array(pendingMemberSchema)
+      .parse(await apiFetch<unknown>('/api/members/pending'))
+    pendingCount.value = pending.length
+  } catch {
+    pendingCount.value = 0
+  }
+}
+
 await useAsyncData('feed', async () => {
   if (auth.isActive) {
-    await loadPage(0)
+    await Promise.all([loadPage(0), refreshPendingCount()])
   }
   return true
 })
@@ -69,6 +86,16 @@ await useAsyncData('feed', async () => {
     </section>
 
     <template v-else>
+      <NuxtLink
+        v-if="pendingCount > 0"
+        to="/members"
+        class="rounded-lg border border-indigo-200 bg-indigo-50 p-3 text-sm text-indigo-800 hover:bg-indigo-100"
+        data-testid="pending-banner"
+      >
+        {{ pendingCount }} demande{{ pendingCount > 1 ? 's' : '' }} d'adhésion en attente —
+        gérer dans « Membres »
+      </NuxtLink>
+
       <FeedPostComposer v-if="canPublish" @published="loadPage(0)" />
 
       <p v-if="loadError" class="text-sm text-red-600">{{ loadError }}</p>

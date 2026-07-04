@@ -38,8 +38,39 @@ docker compose ps          # tout doit finir "healthy" / "running"
 ```
 
 Premier build : plusieurs minutes (Maven + pnpm). Ensuite, depuis le téléphone (Tailscale actif),
-ouvre **`http://<TS_HOST>:3000`** dans Safari/Chrome → crée un club, et
-« Ajouter à l'écran d'accueil » pour l'installer en PWA.
+ouvre **`http://<TS_HOST>:3000`** dans le navigateur et crée un club.
+
+### Installer la PWA sur iPhone
+
+iOS ne propose **pas** de bouton d'installation automatique (contrairement à Android) — ça passe
+par le menu partage :
+
+- **Safari** : bouton Partager (carré + flèche) → **« Sur l'écran d'accueil »**.
+- **Chrome iOS** : menu **⋯** → **Partager** → **« Sur l'écran d'accueil »**.
+
+### Changer les ports publiés (conflit avec une autre appli)
+
+Ne modifie pas `docker-compose.yml` (ça bloquerait les `git pull`). Crée un
+`docker-compose.override.yml` à côté (non versionné, fusionné automatiquement par compose) :
+
+```yaml
+services:
+  frontend:
+    ports: !override
+      - "3001:3000"
+  minio:
+    ports: !override
+      - "9002:9000"
+      - "127.0.0.1:9001:9001"
+```
+
+> `!override` (compose ≥ 2.24) **remplace** la liste au lieu de l'ajouter — sans lui, l'ancien
+> port resterait publié en plus du nouveau. Si tu as déjà modifié `docker-compose.yml` :
+> reporte tes ports dans l'override puis `git checkout docker-compose.yml`.
+
+⚠️ Si tu changes le port hôte de MinIO, mets `S3_PUBLIC_ENDPOINT` en cohérence dans `.env`
+(ex. `http://<TS_HOST>:9002`), puis `docker compose up -d`. Les ports internes (le `:3000`,
+`:9000` à droite des mappings) ne changent jamais.
 
 ## Mettre à jour après un merge dans `main`
 
