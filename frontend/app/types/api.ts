@@ -83,25 +83,11 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Publish an INFO or CANCELLATION post (ORG audience: admins; COACH_STUDENTS: coaches) */
+        /**
+         * Publish a post (ORG audience: admins; COACH_STUDENTS: coaches) with up to 4 optional images
+         * @description Images are content-sniffed (JPEG/PNG/WebP), max 5 MB each
+         */
         post: operations["create"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/posts/poster": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Publish a POSTER post with an image (content-sniffed JPEG/PNG/WebP, max 5 MB) */
-        post: operations["createPoster"];
         delete?: never;
         options?: never;
         head?: never;
@@ -251,7 +237,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Aggregated feed of the caller: ORG posts plus COACH_STUDENTS posts they can see */
+        /** Aggregated feed of the caller — active pinned posts (session cancellations) first */
         get: operations["feed"];
         put?: never;
         post?: never;
@@ -439,11 +425,6 @@ export interface components {
             note?: string;
         };
         CreatePostRequest: {
-            /**
-             * @description INFO or CANCELLATION — posters go through POST /api/posts/poster
-             * @enum {string}
-             */
-            type: "INFO" | "CANCELLATION" | "POSTER";
             /** @enum {string} */
             audience: "ORG" | "COACH_STUDENTS";
             title: string;
@@ -453,13 +434,18 @@ export interface components {
             /** Format: uuid */
             id?: string;
             /** @enum {string} */
-            type?: "INFO" | "CANCELLATION" | "POSTER";
-            /** @enum {string} */
             audience?: "ORG" | "COACH_STUDENTS";
             title?: string;
             body?: string;
-            /** @description Short-lived signed URL of the poster image (POSTER posts only) */
-            imageUrl?: string;
+            /** @description Short-lived signed URLs of the attached images, in display order */
+            imageUrls?: string[];
+            /** @description Highlighted in the feed (e.g. session cancellations) */
+            important?: boolean;
+            /**
+             * Format: date-time
+             * @description Kept at the top of the feed until this instant
+             */
+            pinnedUntil?: string;
             /** Format: uuid */
             authorId?: string;
             authorDisplayName?: string;
@@ -467,12 +453,6 @@ export interface components {
             authorRole?: "OWNER" | "ADMIN" | "COACH" | "MEMBER";
             /** Format: date-time */
             createdAt?: string;
-        };
-        CreatePosterRequest: {
-            /** @enum {string} */
-            audience: "ORG" | "COACH_STUDENTS";
-            title: string;
-            body?: string;
         };
         MemberResponse: {
             /** Format: uuid */
@@ -793,45 +773,11 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CreatePostRequest"];
-            };
-        };
-        responses: {
-            /** @description Created */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["FeedPostResponse"];
-                };
-            };
-            /** @description Role not allowed to publish to the requested audience */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["FeedPostResponse"];
-                };
-            };
-        };
-    };
-    createPoster: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
         requestBody?: {
             content: {
                 "multipart/form-data": {
-                    meta: components["schemas"]["CreatePosterRequest"];
-                    /** Format: binary */
-                    image: string;
+                    meta: components["schemas"]["CreatePostRequest"];
+                    images?: string[];
                 };
             };
         };
@@ -845,7 +791,7 @@ export interface operations {
                     "*/*": components["schemas"]["FeedPostResponse"];
                 };
             };
-            /** @description File content is not a supported image */
+            /** @description Too many images or a file is not a supported image */
             400: {
                 headers: {
                     [name: string]: unknown;

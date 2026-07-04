@@ -4,17 +4,9 @@ import type { FeedPost } from '~/schemas/feed'
 const props = defineProps<{ post: FeedPost; canDelete: boolean }>()
 defineEmits<{ delete: [id: string] }>()
 
-const typeLabels: Record<FeedPost['type'], string> = {
-  INFO: 'Info',
-  CANCELLATION: 'Cours annulé',
-  POSTER: 'Affiche',
-}
-
-const typeClasses: Record<FeedPost['type'], string> = {
-  INFO: 'bg-indigo-50 text-indigo-700',
-  CANCELLATION: 'bg-red-50 text-red-700',
-  POSTER: 'bg-emerald-50 text-emerald-700',
-}
+const isPinned = computed(
+  () => props.post.pinnedUntil !== undefined && new Date(props.post.pinnedUntil) > new Date(),
+)
 
 const createdAtLabel = computed(() =>
   new Intl.DateTimeFormat('fr-FR', { dateStyle: 'medium', timeStyle: 'short' }).format(
@@ -24,15 +16,25 @@ const createdAtLabel = computed(() =>
 </script>
 
 <template>
-  <!-- Un cours annulé est important : la carte entière est mise en évidence -->
+  <!-- Un post important (annulation de séance) est mis en évidence et épinglé en tête du fil -->
   <article
     class="flex flex-col gap-2 rounded-lg border p-4"
-    :class="post.type === 'CANCELLATION' ? 'border-red-300 bg-red-50' : 'border-gray-200 bg-white'"
+    :class="post.important ? 'border-red-300 bg-red-50' : 'border-gray-200 bg-white'"
   >
     <div class="flex items-center justify-between gap-2">
       <div class="flex items-center gap-2">
-        <span class="rounded px-2 py-0.5 text-xs" :class="typeClasses[post.type]">
-          {{ typeLabels[post.type] }}
+        <span
+          v-if="post.important"
+          class="rounded bg-red-100 px-2 py-0.5 text-xs font-medium text-red-700"
+        >
+          Important
+        </span>
+        <span
+          v-if="isPinned"
+          class="rounded bg-red-100 px-2 py-0.5 text-xs text-red-700"
+          data-testid="pinned-chip"
+        >
+          Épinglé
         </span>
         <span
           v-if="post.audience === 'COACH_STUDENTS'"
@@ -54,9 +56,10 @@ const createdAtLabel = computed(() =>
     <h3 class="font-semibold text-gray-900">{{ post.title }}</h3>
     <p v-if="post.body" class="text-sm whitespace-pre-line text-gray-700">{{ post.body }}</p>
     <img
-      v-if="post.imageUrl"
-      :src="post.imageUrl"
-      :alt="post.title"
+      v-for="(imageUrl, index) in post.imageUrls"
+      :key="imageUrl"
+      :src="imageUrl"
+      :alt="`${post.title} — image ${index + 1}`"
       class="max-h-96 w-full rounded-md object-contain"
       loading="lazy"
     >

@@ -2,13 +2,13 @@ package app.belay.post;
 
 import app.belay.auth.UserPrincipal;
 import app.belay.post.dto.CreatePostRequest;
-import app.belay.post.dto.CreatePosterRequest;
 import app.belay.post.dto.FeedPageResponse;
 import app.belay.post.dto.FeedPostResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import java.util.List;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -18,7 +18,6 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestPart;
@@ -38,7 +37,7 @@ public class PostController {
     }
 
     @GetMapping("/feed")
-    @Operation(summary = "Aggregated feed of the caller: ORG posts plus COACH_STUDENTS posts they can see")
+    @Operation(summary = "Aggregated feed of the caller — active pinned posts (session cancellations) first")
     public FeedPageResponse feed(
             @AuthenticationPrincipal UserPrincipal principal,
             @RequestParam(defaultValue = "0") int page,
@@ -46,27 +45,19 @@ public class PostController {
         return postService.feed(principal, page, size);
     }
 
-    @PostMapping("/posts")
+    @PostMapping(value = "/posts", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasAnyRole('OWNER', 'ADMIN', 'COACH')")
     @ResponseStatus(HttpStatus.CREATED)
-    @Operation(summary = "Publish an INFO or CANCELLATION post (ORG audience: admins; COACH_STUDENTS: coaches)")
+    @Operation(
+            summary = "Publish a post (ORG audience: admins; COACH_STUDENTS: coaches) with up to 4 optional images",
+            description = "Images are content-sniffed (JPEG/PNG/WebP), max 5 MB each")
+    @ApiResponse(responseCode = "400", description = "Too many images or a file is not a supported image")
     @ApiResponse(responseCode = "403", description = "Role not allowed to publish to the requested audience")
     public FeedPostResponse create(
-            @AuthenticationPrincipal UserPrincipal principal, @Valid @RequestBody CreatePostRequest body) {
-        return postService.create(principal, body);
-    }
-
-    @PostMapping(value = "/posts/poster", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN', 'COACH')")
-    @ResponseStatus(HttpStatus.CREATED)
-    @Operation(summary = "Publish a POSTER post with an image (content-sniffed JPEG/PNG/WebP, max 5 MB)")
-    @ApiResponse(responseCode = "400", description = "File content is not a supported image")
-    @ApiResponse(responseCode = "403", description = "Role not allowed to publish to the requested audience")
-    public FeedPostResponse createPoster(
             @AuthenticationPrincipal UserPrincipal principal,
-            @Valid @RequestPart("meta") CreatePosterRequest meta,
-            @RequestPart("image") MultipartFile image) {
-        return postService.createPoster(principal, meta, image);
+            @Valid @RequestPart("meta") CreatePostRequest meta,
+            @RequestPart(value = "images", required = false) List<MultipartFile> images) {
+        return postService.create(principal, meta, images);
     }
 
     @DeleteMapping("/posts/{postId}")

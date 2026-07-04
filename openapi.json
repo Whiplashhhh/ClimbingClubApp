@@ -283,47 +283,9 @@
     "/api/posts" : {
       "post" : {
         "tags" : [ "feed" ],
-        "summary" : "Publish an INFO or CANCELLATION post (ORG audience: admins; COACH_STUDENTS: coaches)",
+        "summary" : "Publish a post (ORG audience: admins; COACH_STUDENTS: coaches) with up to 4 optional images",
+        "description" : "Images are content-sniffed (JPEG/PNG/WebP), max 5 MB each",
         "operationId" : "create",
-        "requestBody" : {
-          "content" : {
-            "application/json" : {
-              "schema" : {
-                "$ref" : "#/components/schemas/CreatePostRequest"
-              }
-            }
-          },
-          "required" : true
-        },
-        "responses" : {
-          "403" : {
-            "description" : "Role not allowed to publish to the requested audience",
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/FeedPostResponse"
-                }
-              }
-            }
-          },
-          "201" : {
-            "description" : "Created",
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/FeedPostResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/posts/poster" : {
-      "post" : {
-        "tags" : [ "feed" ],
-        "summary" : "Publish a POSTER post with an image (content-sniffed JPEG/PNG/WebP, max 5 MB)",
-        "operationId" : "createPoster",
         "requestBody" : {
           "content" : {
             "multipart/form-data" : {
@@ -331,21 +293,24 @@
                 "type" : "object",
                 "properties" : {
                   "meta" : {
-                    "$ref" : "#/components/schemas/CreatePosterRequest"
+                    "$ref" : "#/components/schemas/CreatePostRequest"
                   },
-                  "image" : {
-                    "type" : "string",
-                    "format" : "binary"
+                  "images" : {
+                    "type" : "array",
+                    "items" : {
+                      "type" : "string",
+                      "format" : "binary"
+                    }
                   }
                 },
-                "required" : [ "image", "meta" ]
+                "required" : [ "meta" ]
               }
             }
           }
         },
         "responses" : {
           "400" : {
-            "description" : "File content is not a supported image",
+            "description" : "Too many images or a file is not a supported image",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -638,7 +603,7 @@
     "/api/feed" : {
       "get" : {
         "tags" : [ "feed" ],
-        "summary" : "Aggregated feed of the caller: ORG posts plus COACH_STUDENTS posts they can see",
+        "summary" : "Aggregated feed of the caller — active pinned posts (session cancellations) first",
         "operationId" : "feed",
         "parameters" : [ {
           "name" : "page",
@@ -999,11 +964,6 @@
       "CreatePostRequest" : {
         "type" : "object",
         "properties" : {
-          "type" : {
-            "type" : "string",
-            "description" : "INFO or CANCELLATION — posters go through POST /api/posts/poster",
-            "enum" : [ "INFO", "CANCELLATION", "POSTER" ]
-          },
           "audience" : {
             "type" : "string",
             "enum" : [ "ORG", "COACH_STUDENTS" ]
@@ -1019,7 +979,7 @@
             "minLength" : 0
           }
         },
-        "required" : [ "audience", "title", "type" ]
+        "required" : [ "audience", "title" ]
       },
       "FeedPostResponse" : {
         "type" : "object",
@@ -1027,10 +987,6 @@
           "id" : {
             "type" : "string",
             "format" : "uuid"
-          },
-          "type" : {
-            "type" : "string",
-            "enum" : [ "INFO", "CANCELLATION", "POSTER" ]
           },
           "audience" : {
             "type" : "string",
@@ -1042,9 +998,21 @@
           "body" : {
             "type" : "string"
           },
-          "imageUrl" : {
+          "imageUrls" : {
+            "type" : "array",
+            "description" : "Short-lived signed URLs of the attached images, in display order",
+            "items" : {
+              "type" : "string"
+            }
+          },
+          "important" : {
+            "type" : "boolean",
+            "description" : "Highlighted in the feed (e.g. session cancellations)"
+          },
+          "pinnedUntil" : {
             "type" : "string",
-            "description" : "Short-lived signed URL of the poster image (POSTER posts only)"
+            "format" : "date-time",
+            "description" : "Kept at the top of the feed until this instant"
           },
           "authorId" : {
             "type" : "string",
@@ -1062,26 +1030,6 @@
             "format" : "date-time"
           }
         }
-      },
-      "CreatePosterRequest" : {
-        "type" : "object",
-        "properties" : {
-          "audience" : {
-            "type" : "string",
-            "enum" : [ "ORG", "COACH_STUDENTS" ]
-          },
-          "title" : {
-            "type" : "string",
-            "maxLength" : 200,
-            "minLength" : 0
-          },
-          "body" : {
-            "type" : "string",
-            "maxLength" : 5000,
-            "minLength" : 0
-          }
-        },
-        "required" : [ "audience", "title" ]
       },
       "MemberResponse" : {
         "type" : "object",

@@ -9,7 +9,6 @@ import app.belay.organization.OrganizationRepository;
 import app.belay.post.Post;
 import app.belay.post.PostAudience;
 import app.belay.post.PostService;
-import app.belay.post.PostType;
 import app.belay.slot.dto.AddSlotMemberRequest;
 import app.belay.slot.dto.CreateSlotChangeRequest;
 import app.belay.slot.dto.CreateSlotRequest;
@@ -21,7 +20,9 @@ import app.belay.user.AppUser;
 import app.belay.user.Role;
 import app.belay.user.UserRepository;
 import app.belay.user.UserStatus;
+import java.time.Instant;
 import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.Comparator;
 import java.util.HashSet;
@@ -216,17 +217,20 @@ public class SlotService {
     }
 
     /**
-     * L'annulation apparaît aussi dans le fil des élèves : post CANCELLATION publié au nom du
-     * moniteur du créneau (l'audience COACH_STUDENTS est résolue via ses créneaux), retiré si la
-     * séance est rétablie.
+     * L'annulation apparaît aussi dans le fil des élèves : post « important » publié au nom du
+     * moniteur du créneau (l'audience COACH_STUDENTS est résolue via ses créneaux), épinglé en
+     * tête du fil jusqu'à la fin du jour de la séance, retiré si la séance est rétablie.
      */
     private void publishToFeed(Slot slot, SlotChange change) {
+        Instant pinnedUntil =
+                change.getDate().plusDays(1).atStartOfDay(ZoneOffset.UTC).toInstant();
         Post post = postService.createSystemPost(
                 slot.getCoach(),
-                PostType.CANCELLATION,
                 PostAudience.COACH_STUDENTS,
                 changeHeadline(slot, change),
-                change.getNote());
+                change.getNote(),
+                true,
+                pinnedUntil);
         change.setPost(post);
     }
 

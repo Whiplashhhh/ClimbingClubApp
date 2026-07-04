@@ -27,3 +27,7 @@ Hypothèses prises faute d'information, avec le défaut le plus raisonnable. À 
   la semaine + heure + durée). Le « moniteur » d'un créneau doit être un membre actif avec un
   rôle COACH, ADMIN ou OWNER (un président de petit club peut animer ses cours) — jamais un
   simple MEMBER. Un moniteur ne crée/gère que ses propres créneaux ; un admin gère tout.
+- **A-010** (2026-07-04) : Plus de catégories de posts (décision produit, retours n°3) : un post
+  = titre + texte + 0..4 images (5 Mo max chacune). Les posts générés par une annulation/un
+  décalage de séance portent `important` (mise en évidence rouge) et sont épinglés en tête du
+  fil jusqu'à la fin du jour (UTC) de la séance concernée, puis redescendent dans le flux normal.
