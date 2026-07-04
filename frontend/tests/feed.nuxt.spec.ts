@@ -24,11 +24,25 @@ const ownerMe: Me = {
 const feedPage = {
   items: [
     {
+      id: '55555555-5555-4555-8555-555555555555',
+      audience: 'COACH_STUDENTS',
+      title: 'Séance « Ados perf » du 10/07/2026 annulée',
+      body: 'Mur en travaux',
+      imageUrls: [],
+      important: true,
+      pinnedUntil: '2099-01-01T00:00:00Z',
+      authorId: ownerMe.id,
+      authorDisplayName: 'Coach',
+      authorRole: 'COACH',
+      createdAt: '2026-07-03T09:00:00Z',
+    },
+    {
       id: '33333333-3333-4333-8333-333333333333',
-      type: 'INFO',
       audience: 'ORG',
       title: 'Assemblée générale',
       body: 'Rendez-vous samedi.',
+      imageUrls: [],
+      important: false,
       authorId: ownerMe.id,
       authorDisplayName: 'Owner',
       authorRole: 'OWNER',
@@ -65,6 +79,10 @@ describe('feed page', () => {
     expect(wrapper.find('[data-testid="post-composer"]').exists()).toBe(true)
     expect(wrapper.text()).toContain('Assemblée générale')
     expect(apiFetchMock).toHaveBeenCalledWith('/api/feed?page=0&size=20')
+
+    // Le post important (annulation) est mis en évidence et marqué épinglé
+    expect(wrapper.text()).toContain('Important')
+    expect(wrapper.find('[data-testid="pinned-chip"]').exists()).toBe(true)
   })
 
   it('hides the composer from plain members but shows the feed', async () => {

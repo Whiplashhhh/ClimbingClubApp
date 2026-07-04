@@ -1,5 +1,7 @@
 <script setup lang="ts">
-import { feedPostSchema, type PostAudience, type PostType } from '~/schemas/feed'
+import { feedPostSchema, type PostAudience } from '~/schemas/feed'
+
+const MAX_IMAGES = 4
 
 const emit = defineEmits<{ published: [] }>()
 
@@ -11,59 +13,37 @@ const audienceLabel = computed(() =>
   audience.value === 'ORG' ? 'Visible par tout le club' : 'Visible par vos élèves',
 )
 
-const type = ref<PostType>('INFO')
 const title = ref('')
 const body = ref('')
-const imageFile = ref<File | null>(null)
+const imageFiles = ref<File[]>([])
+const fileInput = ref<HTMLInputElement | null>(null)
 const submitting = ref(false)
 const error = ref<string | null>(null)
 
-const typeOptions: { value: PostType; label: string }[] = [
-  { value: 'INFO', label: 'Info' },
-  { value: 'CANCELLATION', label: 'Cours annulé' },
-  { value: 'POSTER', label: 'Affiche' },
-]
-
-function onFileChange(event: Event) {
+function onFilesChange(event: Event) {
   const input = event.target as HTMLInputElement
-  imageFile.value = input.files?.[0] ?? null
+  imageFiles.value = Array.from(input.files ?? []).slice(0, MAX_IMAGES)
 }
 
 async function submit() {
   error.value = null
   submitting.value = true
   try {
-    if (type.value === 'POSTER') {
-      if (!imageFile.value) {
-        error.value = 'Choisissez une image pour l’affiche.'
-        return
-      }
-      const meta = { audience: audience.value, title: title.value, body: body.value || undefined }
-      const form = new FormData()
-      form.append('meta', new Blob([JSON.stringify(meta)], { type: 'application/json' }))
-      form.append('image', imageFile.value)
-      feedPostSchema.parse(
-        await apiFetch<unknown>('/api/posts/poster', { method: 'POST', body: form }),
-      )
-    } else {
-      feedPostSchema.parse(
-        await apiFetch<unknown>('/api/posts', {
-          method: 'POST',
-          body: {
-            type: type.value,
-            audience: audience.value,
-            title: title.value,
-            body: body.value || undefined,
-          },
-        }),
-      )
+    const meta = { audience: audience.value, title: title.value, body: body.value || undefined }
+    const form = new FormData()
+    form.append('meta', new Blob([JSON.stringify(meta)], { type: 'application/json' }))
+    for (const file of imageFiles.value) {
+      form.append('images', file)
     }
+    feedPostSchema.parse(await apiFetch<unknown>('/api/posts', { method: 'POST', body: form }))
     title.value = ''
     body.value = ''
-    imageFile.value = null
+    imageFiles.value = []
+    if (fileInput.value) fileInput.value.value = ''
     emit('published')
   } catch {
-    error.value = 'La publication a échoué. Vérifiez le formulaire (image JPEG/PNG/WebP, 5 Mo max).'
+    error.value =
+      'La publication a échoué. Vérifiez le formulaire (images JPEG/PNG/WebP, 5 Mo max chacune).'
   } finally {
     submitting.value = false
   }
@@ -83,23 +63,6 @@ async function submit() {
       </span>
     </div>
 
-    <div class="flex gap-2">
-      <button
-        v-for="option in typeOptions"
-        :key="option.value"
-        type="button"
-        class="rounded-md border px-3 py-1 text-sm"
-        :class="
-          type === option.value
-            ? 'border-indigo-600 bg-indigo-600 text-white'
-            : 'border-gray-300 text-gray-600 hover:bg-gray-100'
-        "
-        @click="type = option.value"
-      >
-        {{ option.label }}
-      </button>
-    </div>
-
     <input
       v-model="title"
       type="text"
@@ -115,13 +78,22 @@ async function submit() {
       placeholder="Message (optionnel)"
       class="rounded-md border border-gray-300 px-3 py-2 focus:border-indigo-500 focus:outline-none"
     />
-    <input
-      v-if="type === 'POSTER'"
-      type="file"
-      accept="image/jpeg,image/png,image/webp"
-      class="text-gray-600"
-      @change="onFileChange"
-    >
+    <label class="flex flex-col gap-1 text-sm text-gray-600">
+      Images (optionnel, {{ MAX_IMAGES }} max)
+      <input
+        ref="fileInput"
+        type="file"
+        multiple
+        accept="image/jpeg,image/png,image/webp"
+        class="text-gray-600"
+        @change="onFilesChange"
+      >
+    </label>
+    <p v-if="imageFiles.length > 0" class="text-xs text-gray-500">
+      {{ imageFiles.length }} image{{ imageFiles.length > 1 ? 's' : '' }} sélectionnée{{
+        imageFiles.length > 1 ? 's' : ''
+      }}
+    </p>
 
     <p v-if="error" class="text-sm text-red-600">{{ error }}</p>
 
