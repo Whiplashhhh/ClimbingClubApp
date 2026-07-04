@@ -1,6 +1,6 @@
 # État d'avancement — Belay
 
-> Mis à jour : 2026-07-04 (Phase 3 complète : créneaux, groupes, annulations, notifications).
+> Mis à jour : 2026-07-04 (Phase 3 complète + retours de test n°2).
 
 ## Fait (mergé dans `main`, CI verte)
 
@@ -44,8 +44,16 @@
   domaine `Notification` générique (message FR, lu/non-lu), le groupe + le moniteur (sauf
   l'auteur) sont notifiés ; cloche avec pastille dans l'en-tête, page `/notifications`
   (tout marqué lu à l'ouverture), formulaire annuler/décaler + « rétablir » sur les cartes de
-  créneau. NB : pas de post CANCELLATION automatique — le moniteur peut toujours en publier un
-  manuellement (choix : éviter de publier « au nom de » quelqu'un).
+  créneau. L'annulation publie AUSSI un post « Cours annulé » automatique dans le fil des
+  élèves (au nom du moniteur du créneau, lié par V6, retiré si la séance est rétablie) —
+  décision produit de Willem après test terrain, remplace le choix initial inverse.
+
+- **Retours de test n°2** : annulations mises en évidence dans le fil (carte rouge) et
+  publiées automatiquement ; agenda « Cette semaine » sur /slots (admins/moniteurs, séances
+  réelles avec annulations/décalages appliqués) ; menu avatar (initiales) qui héberge la
+  déconnexion — prêt pour la future page profil ; rafraîchissement automatique (retour au
+  premier plan + 60 s) sur fil/notifications/créneaux/pastille + boutons ↻ manuels, en
+  attendant le push web (Phase 7).
 
 ## En cours
 
