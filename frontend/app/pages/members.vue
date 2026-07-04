@@ -37,6 +37,23 @@ async function approve(id: string) {
   }
 }
 
+// Un admin peut changer le rôle des autres (jamais le sien, jamais celui du président)
+function canChangeRole(member: Member): boolean {
+  return auth.isAdmin && member.role !== 'OWNER' && member.id !== auth.me?.id
+}
+
+async function changeRole(member: Member, event: Event) {
+  actionError.value = null
+  const role = (event.target as HTMLSelectElement).value
+  try {
+    await apiFetch(`/api/members/${member.id}/role`, { method: 'PATCH', body: { role } })
+    await loadMembers()
+  } catch {
+    actionError.value = 'Le changement de rôle a échoué.'
+    await loadMembers()
+  }
+}
+
 await useAsyncData('members', async () => {
   await loadMembers()
   return true
@@ -85,10 +102,21 @@ await useAsyncData('members', async () => {
           <li
             v-for="member in members"
             :key="member.id"
-            class="flex items-center justify-between rounded-lg border border-gray-200 bg-white p-3"
+            class="flex items-center justify-between gap-2 rounded-lg border border-gray-200 bg-white p-3"
           >
-            <span class="text-sm text-gray-800">{{ member.displayName }}</span>
-            <span class="text-xs text-gray-500">{{ roleLabels[member.role] }}</span>
+            <span class="min-w-0 truncate text-sm text-gray-800">{{ member.displayName }}</span>
+            <select
+              v-if="canChangeRole(member)"
+              :value="member.role"
+              class="shrink-0 rounded-md border border-gray-300 px-2 py-1 text-xs text-gray-700"
+              :aria-label="`Rôle de ${member.displayName}`"
+              @change="changeRole(member, $event)"
+            >
+              <option value="MEMBER">Membre</option>
+              <option value="COACH">Moniteur</option>
+              <option value="ADMIN">Admin</option>
+            </select>
+            <span v-else class="shrink-0 text-xs text-gray-500">{{ roleLabels[member.role] }}</span>
           </li>
         </ul>
       </section>
