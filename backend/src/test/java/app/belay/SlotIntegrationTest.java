@@ -12,7 +12,9 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.client.MultipartBodyBuilder;
 
 /**
  * Chemin critique de la Phase 3 (créneaux & groupes) : un post COACH_STUDENTS devient visible
@@ -86,10 +88,7 @@ class SlotIntegrationTest {
         // Le moniteur crée son créneau et publie pour ses élèves
         String slotId =
                 createSlot(coach, "Ados jeudi", null).getBody().path("id").asText();
-        coach.post(
-                "/api/posts",
-                Map.of("type", "INFO", "audience", "COACH_STUDENTS", "title", "Sortie falaise samedi"),
-                JsonNode.class);
+        createPost(coach, "COACH_STUDENTS", "Sortie falaise samedi");
 
         // Pas encore élève → invisible
         assertThat(feedTitles(member)).doesNotContain("Sortie falaise samedi");
@@ -247,14 +246,20 @@ class SlotIntegrationTest {
                 .contains("annulée")
                 .contains("Coach malade");
 
-        // L'annulation est aussi publiée dans le fil de l'élève (post CANCELLATION au nom du
+        // L'annulation est aussi publiée dans le fil de l'élève (post important au nom du
         // moniteur), pas dans celui des membres hors groupe
         JsonNode memberFeedItem =
                 member.get("/api/feed", JsonNode.class).getBody().path("items").get(0);
-        assertThat(memberFeedItem.path("type").asText()).isEqualTo("CANCELLATION");
+        assertThat(memberFeedItem.path("important").asBoolean()).isTrue();
         assertThat(memberFeedItem.path("title").asText()).contains("Ados jeudi").contains("annulée");
         assertThat(memberFeedItem.path("body").asText()).isEqualTo("Coach malade");
         assertThat(feedTitles(member2)).noneMatch(title -> title.contains("annulée"));
+
+        // Épinglage : un post publié APRÈS ne passe pas devant l'annulation à venir
+        createPost(coach, "COACH_STUDENTS", "Pensez aux chaussons");
+        List<String> pinnedFirst = feedTitles(member);
+        assertThat(pinnedFirst.get(0)).contains("annulée");
+        assertThat(pinnedFirst).contains("Pensez aux chaussons");
         assertThat(member2.get("/api/notifications", JsonNode.class)
                         .getBody()
                         .path("unreadCount")
@@ -301,6 +306,12 @@ class SlotIntegrationTest {
         JsonNode afterMove = member.get("/api/notifications", JsonNode.class).getBody();
         assertThat(afterMove.path("unreadCount").asLong()).isEqualTo(1);
         assertThat(afterMove.path("items").get(0).path("message").asText()).contains("décalée à 19:00");
+    }
+
+    private ResponseEntity<JsonNode> createPost(ApiActor actor, String audience, String title) {
+        MultipartBodyBuilder builder = new MultipartBodyBuilder();
+        builder.part("meta", Map.of("audience", audience, "title", title), MediaType.APPLICATION_JSON);
+        return actor.postMultipart("/api/posts", builder.build(), JsonNode.class);
     }
 
     private ResponseEntity<JsonNode> createSlot(ApiActor actor, String name, String coachId) {

@@ -18,6 +18,11 @@ import jakarta.persistence.Table;
 import java.time.Instant;
 import java.util.UUID;
 
+/**
+ * Publication du fil : titre + texte + 0..n images ({@link PostImage}). Pas de catégorie —
+ * les posts générés par une annulation de séance portent {@code important} (mise en évidence)
+ * et {@code pinnedUntil} (épinglés en tête du fil jusqu'à la fin du jour de la séance).
+ */
 @Entity
 @Table(name = "post")
 public class Post {
@@ -36,10 +41,6 @@ public class Post {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
-    private PostType type;
-
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 20)
     private PostAudience audience;
 
     @Column(nullable = false, length = 200)
@@ -48,8 +49,11 @@ public class Post {
     @Column(length = 5000)
     private String body;
 
-    @Column(name = "image_object_key", length = 255)
-    private String imageObjectKey;
+    @Column(nullable = false)
+    private boolean important;
+
+    @Column(name = "pinned_until")
+    private Instant pinnedUntil;
 
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
@@ -62,18 +66,18 @@ public class Post {
     public Post(
             Organization organization,
             AppUser author,
-            PostType type,
             PostAudience audience,
             String title,
             String body,
-            String imageObjectKey) {
+            boolean important,
+            Instant pinnedUntil) {
         this.organization = organization;
         this.author = author;
-        this.type = type;
         this.audience = audience;
         this.title = title;
         this.body = body;
-        this.imageObjectKey = imageObjectKey;
+        this.important = important;
+        this.pinnedUntil = pinnedUntil;
     }
 
     @PrePersist
@@ -99,10 +103,6 @@ public class Post {
         return author;
     }
 
-    public PostType getType() {
-        return type;
-    }
-
     public PostAudience getAudience() {
         return audience;
     }
@@ -115,8 +115,12 @@ public class Post {
         return body;
     }
 
-    public String getImageObjectKey() {
-        return imageObjectKey;
+    public boolean isImportant() {
+        return important;
+    }
+
+    public Instant getPinnedUntil() {
+        return pinnedUntil;
     }
 
     public Instant getCreatedAt() {

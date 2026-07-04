@@ -14,6 +14,7 @@ public interface PostRepository extends JpaRepository<Post, UUID> {
      * Fil d'un utilisateur : publications de SON organisation dont il fait partie de l'audience.
      * ORG = tout le monde ; COACH_STUDENTS = visibles par l'auteur et par les élèves du moniteur
      * auteur, c'est-à-dire les membres d'un de ses créneaux (SlotMembership — A-005).
+     * Les posts épinglés encore actifs (annulations de séances à venir) passent devant.
      */
     @Query("""
             select p from Post p
@@ -23,7 +24,8 @@ public interface PostRepository extends JpaRepository<Post, UUID> {
                    or p.author.id = :userId
                    or exists (select 1 from SlotMembership m
                               where m.user.id = :userId and m.slot.coach.id = p.author.id))
-            order by p.createdAt desc, p.id desc
+            order by case when p.pinnedUntil is not null and p.pinnedUntil > CURRENT_TIMESTAMP then 0 else 1 end,
+                     p.createdAt desc, p.id desc
             """)
     Slice<Post> findFeed(@Param("organizationId") UUID organizationId, @Param("userId") UUID userId, Pageable pageable);
 
