@@ -9,6 +9,9 @@
     "url" : "/"
   } ],
   "tags" : [ {
+    "name" : "notifications",
+    "description" : "In-app notifications of the authenticated member"
+  }, {
     "name" : "feed",
     "description" : "Home feed: posts with an audience, aggregated per user (tenant-scoped)"
   }, {
@@ -209,6 +212,74 @@
         }
       }
     },
+    "/api/slots/{slotId}/changes" : {
+      "post" : {
+        "tags" : [ "slots" ],
+        "summary" : "Cancel or move one session at a given date — notifies the slot's group in-app",
+        "operationId" : "createChange",
+        "parameters" : [ {
+          "name" : "slotId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/CreateSlotChangeRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "400" : {
+            "description" : "Date in the past / not on the slot's weekday / bad newStartTime",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SlotResponse"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "Slot not found in the caller's organization",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SlotResponse"
+                }
+              }
+            }
+          },
+          "409" : {
+            "description" : "This session is already cancelled or moved",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SlotResponse"
+                }
+              }
+            }
+          },
+          "201" : {
+            "description" : "Created",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SlotResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/posts" : {
       "post" : {
         "tags" : [ "feed" ],
@@ -302,6 +373,18 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "/api/notifications/read-all" : {
+      "post" : {
+        "tags" : [ "notifications" ],
+        "summary" : "Mark all the caller's notifications as read",
+        "operationId" : "readAll",
+        "responses" : {
+          "204" : {
+            "description" : "No Content"
           }
         }
       }
@@ -463,6 +546,44 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/MemberResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/notifications" : {
+      "get" : {
+        "tags" : [ "notifications" ],
+        "summary" : "Latest notifications of the caller, with the unread count",
+        "operationId" : "list",
+        "parameters" : [ {
+          "name" : "page",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32",
+            "default" : 0
+          }
+        }, {
+          "name" : "size",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32",
+            "default" : 20
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/NotificationPageResponse"
                 }
               }
             }
@@ -637,6 +758,42 @@
         }
       }
     },
+    "/api/slots/{slotId}/changes/{changeId}" : {
+      "delete" : {
+        "tags" : [ "slots" ],
+        "summary" : "Revert a session cancellation/move (admins or the slot's coach)",
+        "operationId" : "deleteChange",
+        "parameters" : [ {
+          "name" : "slotId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "name" : "changeId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "404" : {
+            "description" : "Slot or change not found",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SlotResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/posts/{postId}" : {
       "delete" : {
         "tags" : [ "feed" ],
@@ -690,6 +847,31 @@
         },
         "required" : [ "dayOfWeek", "durationMinutes", "name", "startTime" ]
       },
+      "SlotChangeResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "date" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "action" : {
+            "type" : "string",
+            "enum" : [ "CANCELLED", "MOVED" ]
+          },
+          "newStartTime" : {
+            "type" : "string",
+            "format" : "partial-time",
+            "example" : "19:00"
+          },
+          "note" : {
+            "type" : "string"
+          }
+        }
+      },
       "SlotMemberResponse" : {
         "type" : "object",
         "properties" : {
@@ -737,6 +919,13 @@
             "items" : {
               "$ref" : "#/components/schemas/SlotMemberResponse"
             }
+          },
+          "changes" : {
+            "type" : "array",
+            "description" : "Upcoming cancelled/moved sessions",
+            "items" : {
+              "$ref" : "#/components/schemas/SlotChangeResponse"
+            }
           }
         }
       },
@@ -780,6 +969,32 @@
           }
         },
         "required" : [ "userId" ]
+      },
+      "CreateSlotChangeRequest" : {
+        "type" : "object",
+        "properties" : {
+          "date" : {
+            "type" : "string",
+            "format" : "date",
+            "description" : "Session date — must fall on the slot's weekday"
+          },
+          "action" : {
+            "type" : "string",
+            "enum" : [ "CANCELLED", "MOVED" ]
+          },
+          "newStartTime" : {
+            "type" : "string",
+            "format" : "partial-time",
+            "description" : "Required when MOVED",
+            "example" : "19:00"
+          },
+          "note" : {
+            "type" : "string",
+            "maxLength" : 500,
+            "minLength" : 0
+          }
+        },
+        "required" : [ "action", "date" ]
       },
       "CreatePostRequest" : {
         "type" : "object",
@@ -1007,6 +1222,56 @@
           }
         },
         "required" : [ "role" ]
+      },
+      "NotificationPageResponse" : {
+        "type" : "object",
+        "properties" : {
+          "items" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/NotificationResponse"
+            }
+          },
+          "page" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "size" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "hasNext" : {
+            "type" : "boolean"
+          },
+          "unreadCount" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        }
+      },
+      "NotificationResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "type" : {
+            "type" : "string",
+            "enum" : [ "SLOT_CANCELLED", "SLOT_MOVED" ]
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "readAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "createdAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        }
       },
       "PendingMemberResponse" : {
         "type" : "object",

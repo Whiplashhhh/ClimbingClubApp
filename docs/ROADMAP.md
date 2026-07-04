@@ -36,7 +36,7 @@
 ## Phase 3 — Créneaux & groupes
 - [x] Slots récurrents, rattachement des membres, groupe dérivé (+ résolution de l'audience
       COACH_STUDENTS du fil via les rattachements — A-005 refermée)
-- [ ] Annulation / décalage + notification in-app
+- [x] Annulation / décalage + notification in-app
 
 ## Phase 4 — Voies & murs
 - [ ] Secteurs, voies (nom/cotation/type/photo), rattachement, affichage

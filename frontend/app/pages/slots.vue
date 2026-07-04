@@ -1,7 +1,13 @@
 <script setup lang="ts">
 import { z } from 'zod'
 import { memberSchema, type Member } from '~/schemas/auth'
-import { dayLabels, slotSchema, type DayOfWeek, type Slot } from '~/schemas/slots'
+import {
+  dayLabels,
+  slotSchema,
+  type CreateSlotChangePayload,
+  type DayOfWeek,
+  type Slot,
+} from '~/schemas/slots'
 
 useHead({ title: 'Créneaux — Belay' })
 
@@ -71,13 +77,24 @@ async function deleteSlot(slotId: string) {
   await mutate(() => apiFetch(`/api/slots/${slotId}`, { method: 'DELETE' }))
 }
 
-async function mutate(action: () => Promise<unknown>) {
+async function createChange(slotId: string, payload: CreateSlotChangePayload) {
+  await mutate(
+    () => apiFetch(`/api/slots/${slotId}/changes`, { method: 'POST', body: payload }),
+    'La modification a échoué — vérifie que la date tombe bien le jour du créneau.',
+  )
+}
+
+async function removeChange(slotId: string, changeId: string) {
+  await mutate(() => apiFetch(`/api/slots/${slotId}/changes/${changeId}`, { method: 'DELETE' }))
+}
+
+async function mutate(action: () => Promise<unknown>, failureMessage = "L'opération a échoué.") {
   error.value = null
   try {
     await action()
     await loadSlots()
   } catch {
-    error.value = "L'opération a échoué."
+    error.value = failureMessage
   }
 }
 
@@ -176,6 +193,8 @@ await useAsyncData('slots', async () => {
           @add-member="addMember"
           @remove-member="removeMember"
           @delete-slot="deleteSlot"
+          @create-change="createChange"
+          @remove-change="removeChange"
         />
       </section>
     </template>

@@ -18,9 +18,12 @@ public record SlotResponse(
         int durationMinutes,
         UUID coachId,
         String coachDisplayName,
-        List<SlotMemberResponse> members) {
+        List<SlotMemberResponse> members,
 
-    public static SlotResponse from(Slot slot, List<SlotMemberResponse> members) {
+        @Schema(description = "Upcoming cancelled/moved sessions")
+        List<SlotChangeResponse> changes) {
+
+    public static SlotResponse from(Slot slot, List<SlotMemberResponse> members, List<SlotChangeResponse> changes) {
         return new SlotResponse(
                 slot.getId(),
                 slot.getName(),
@@ -29,6 +32,7 @@ public record SlotResponse(
                 slot.getDurationMinutes(),
                 slot.getCoach().getId(),
                 slot.getCoach().getDisplayName(),
-                members);
+                members,
+                changes);
     }
 }

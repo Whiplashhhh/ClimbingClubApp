@@ -57,6 +57,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/slots/{slotId}/changes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Cancel or move one session at a given date — notifies the slot's group in-app */
+        post: operations["createChange"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/posts": {
         parameters: {
             query?: never;
@@ -85,6 +102,23 @@ export interface paths {
         put?: never;
         /** Publish a POSTER post with an image (content-sniffed JPEG/PNG/WebP, max 5 MB) */
         post: operations["createPoster"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/notifications/read-all": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Mark all the caller's notifications as read */
+        post: operations["readAll"];
         delete?: never;
         options?: never;
         head?: never;
@@ -157,6 +191,23 @@ export interface paths {
         head?: never;
         /** Change a member's role (admins only, OWNER excluded) */
         patch: operations["changeRole"];
+        trace?: never;
+    };
+    "/api/notifications": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Latest notifications of the caller, with the unread count */
+        get: operations["list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/api/members": {
@@ -261,6 +312,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/slots/{slotId}/changes/{changeId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Revert a session cancellation/move (admins or the slot's coach) */
+        delete: operations["deleteChange"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/posts/{postId}": {
         parameters: {
             query?: never;
@@ -294,6 +362,20 @@ export interface components {
             /** Format: int32 */
             durationMinutes: number;
         };
+        SlotChangeResponse: {
+            /** Format: uuid */
+            id?: string;
+            /** Format: date */
+            date?: string;
+            /** @enum {string} */
+            action?: "CANCELLED" | "MOVED";
+            /**
+             * Format: partial-time
+             * @example 19:00
+             */
+            newStartTime?: string;
+            note?: string;
+        };
         SlotMemberResponse: {
             /** Format: uuid */
             id?: string;
@@ -316,6 +398,8 @@ export interface components {
             coachId?: string;
             coachDisplayName?: string;
             members?: components["schemas"]["SlotMemberResponse"][];
+            /** @description Upcoming cancelled/moved sessions */
+            changes?: components["schemas"]["SlotChangeResponse"][];
         };
         CreateSlotRequest: {
             name: string;
@@ -337,6 +421,22 @@ export interface components {
         AddSlotMemberRequest: {
             /** Format: uuid */
             userId: string;
+        };
+        CreateSlotChangeRequest: {
+            /**
+             * Format: date
+             * @description Session date — must fall on the slot's weekday
+             */
+            date: string;
+            /** @enum {string} */
+            action: "CANCELLED" | "MOVED";
+            /**
+             * Format: partial-time
+             * @description Required when MOVED
+             * @example 19:00
+             */
+            newStartTime?: string;
+            note?: string;
         };
         CreatePostRequest: {
             /**
@@ -424,6 +524,27 @@ export interface components {
         UpdateRoleRequest: {
             /** @enum {string} */
             role: "OWNER" | "ADMIN" | "COACH" | "MEMBER";
+        };
+        NotificationPageResponse: {
+            items?: components["schemas"]["NotificationResponse"][];
+            /** Format: int32 */
+            page?: number;
+            /** Format: int32 */
+            size?: number;
+            hasNext?: boolean;
+            /** Format: int64 */
+            unreadCount?: number;
+        };
+        NotificationResponse: {
+            /** Format: uuid */
+            id?: string;
+            /** @enum {string} */
+            type?: "SLOT_CANCELLED" | "SLOT_MOVED";
+            message?: string;
+            /** Format: date-time */
+            readAt?: string;
+            /** Format: date-time */
+            createdAt?: string;
         };
         PendingMemberResponse: {
             /** Format: uuid */
@@ -612,6 +733,59 @@ export interface operations {
             };
         };
     };
+    createChange: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slotId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateSlotChangeRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["SlotResponse"];
+                };
+            };
+            /** @description Date in the past / not on the slot's weekday / bad newStartTime */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["SlotResponse"];
+                };
+            };
+            /** @description Slot not found in the caller's organization */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["SlotResponse"];
+                };
+            };
+            /** @description This session is already cancelled or moved */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["SlotResponse"];
+                };
+            };
+        };
+    };
     create: {
         parameters: {
             query?: never;
@@ -688,6 +862,24 @@ export interface operations {
                 content: {
                     "*/*": components["schemas"]["FeedPostResponse"];
                 };
+            };
+        };
+    };
+    readAll: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
@@ -823,6 +1015,29 @@ export interface operations {
             };
         };
     };
+    list: {
+        parameters: {
+            query?: {
+                page?: number;
+                size?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["NotificationPageResponse"];
+                };
+            };
+        };
+    };
     listMembers: {
         parameters: {
             query?: never;
@@ -943,6 +1158,29 @@ export interface operations {
         requestBody?: never;
         responses: {
             /** @description Slot or membership not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["SlotResponse"];
+                };
+            };
+        };
+    };
+    deleteChange: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slotId: string;
+                changeId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Slot or change not found */
             404: {
                 headers: {
                     [name: string]: unknown;

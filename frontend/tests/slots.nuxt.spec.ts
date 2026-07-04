@@ -33,6 +33,14 @@ const slots = [
     coachId: coachMe.id,
     coachDisplayName: 'Coach',
     members: [{ id: memberId, displayName: 'Grimpeur' }],
+    changes: [
+      {
+        id: '55555555-5555-4555-8555-555555555555',
+        date: '2026-07-09',
+        action: 'CANCELLED',
+        note: 'Coach malade',
+      },
+    ],
   },
 ]
 
@@ -70,6 +78,8 @@ describe('slots page', () => {
     expect(wrapper.text()).toContain('Jeudi · 18:00 · 90 min')
     expect(wrapper.text()).toContain('Mon créneau')
     expect(wrapper.text()).toContain('Grimpeur')
+    expect(wrapper.text()).toContain('annulée — Coach malade')
+    expect(wrapper.text()).toContain('Annuler ou décaler une séance')
 
     const removeButton = wrapper.find('button[aria-label="Retirer Grimpeur"]')
     expect(removeButton.exists()).toBe(true)
@@ -87,8 +97,10 @@ describe('slots page', () => {
     wrapper = await mountSuspended(SlotsPage)
     expect(wrapper.find('[data-testid="slot-form"]').exists()).toBe(false)
     expect(wrapper.text()).toContain('Ados jeudi')
-    // Membre du créneau → badge, mais pas de gestion
+    // Membre du créneau → badge et séances annulées visibles, mais pas de gestion
     expect(wrapper.text()).toContain('Mon créneau')
+    expect(wrapper.text()).toContain('annulée — Coach malade')
     expect(wrapper.find('button[aria-label="Retirer Grimpeur"]').exists()).toBe(false)
+    expect(wrapper.text()).not.toContain('Annuler ou décaler une séance')
   })
 })

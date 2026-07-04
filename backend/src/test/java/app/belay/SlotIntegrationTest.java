@@ -207,6 +207,91 @@ class SlotIntegrationTest {
                 .contains("Interne " + tag);
     }
 
+    @Test
+    void cancellingASessionNotifiesTheGroupInApp() {
+        String slotId =
+                createSlot(coach, "Ados jeudi", null).getBody().path("id").asText();
+        coach.post("/api/slots/" + slotId + "/members", Map.of("userId", memberId), JsonNode.class);
+
+        java.time.LocalDate nextThursday =
+                java.time.LocalDate.now().with(java.time.temporal.TemporalAdjusters.next(java.time.DayOfWeek.THURSDAY));
+
+        // Garde-fous : mauvais jour de semaine, heure manquante pour un décalage
+        assertThat(coach.post(
+                                "/api/slots/" + slotId + "/changes",
+                                Map.of("date", nextThursday.plusDays(1).toString(), "action", "CANCELLED"),
+                                JsonNode.class)
+                        .getStatusCode())
+                .isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(coach.post(
+                                "/api/slots/" + slotId + "/changes",
+                                Map.of("date", nextThursday.toString(), "action", "MOVED"),
+                                JsonNode.class)
+                        .getStatusCode())
+                .isEqualTo(HttpStatus.BAD_REQUEST);
+
+        // Annulation → l'élève du groupe est notifié, pas les autres, pas l'auteur
+        ResponseEntity<JsonNode> cancelled = coach.post(
+                "/api/slots/" + slotId + "/changes",
+                Map.of("date", nextThursday.toString(), "action", "CANCELLED", "note", "Coach malade"),
+                JsonNode.class);
+        assertThat(cancelled.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+        assertThat(cancelled.getBody().path("changes").get(0).path("action").asText())
+                .isEqualTo("CANCELLED");
+
+        JsonNode memberNotifications =
+                member.get("/api/notifications", JsonNode.class).getBody();
+        assertThat(memberNotifications.path("unreadCount").asLong()).isEqualTo(1);
+        assertThat(memberNotifications.path("items").get(0).path("message").asText())
+                .contains("Ados jeudi")
+                .contains("annulée")
+                .contains("Coach malade");
+        assertThat(member2.get("/api/notifications", JsonNode.class)
+                        .getBody()
+                        .path("unreadCount")
+                        .asLong())
+                .isZero();
+        assertThat(coach.get("/api/notifications", JsonNode.class)
+                        .getBody()
+                        .path("unreadCount")
+                        .asLong())
+                .isZero();
+
+        // La même séance ne peut pas être modifiée deux fois
+        assertThat(coach.post(
+                                "/api/slots/" + slotId + "/changes",
+                                Map.of("date", nextThursday.toString(), "action", "CANCELLED"),
+                                JsonNode.class)
+                        .getStatusCode())
+                .isEqualTo(HttpStatus.CONFLICT);
+
+        // Tout marquer lu
+        assertThat(member.post("/api/notifications/read-all", null, JsonNode.class)
+                        .getStatusCode())
+                .isEqualTo(HttpStatus.NO_CONTENT);
+        assertThat(member.get("/api/notifications", JsonNode.class)
+                        .getBody()
+                        .path("unreadCount")
+                        .asLong())
+                .isZero();
+
+        // Rétablir la séance, puis décaler une autre : nouvelle notification avec l'heure
+        String changeId = cancelled.getBody().path("changes").get(0).path("id").asText();
+        assertThat(coach.delete("/api/slots/" + slotId + "/changes/" + changeId, JsonNode.class)
+                        .getStatusCode())
+                .isEqualTo(HttpStatus.OK);
+        coach.post(
+                "/api/slots/" + slotId + "/changes",
+                Map.of(
+                        "date", nextThursday.plusWeeks(1).toString(),
+                        "action", "MOVED",
+                        "newStartTime", "19:00"),
+                JsonNode.class);
+        JsonNode afterMove = member.get("/api/notifications", JsonNode.class).getBody();
+        assertThat(afterMove.path("unreadCount").asLong()).isEqualTo(1);
+        assertThat(afterMove.path("items").get(0).path("message").asText()).contains("décalée à 19:00");
+    }
+
     private ResponseEntity<JsonNode> createSlot(ApiActor actor, String name, String coachId) {
         Map<String, Object> body = coachId == null
                 ? Map.of("name", name, "dayOfWeek", "THURSDAY", "startTime", "18:00", "durationMinutes", 90)
