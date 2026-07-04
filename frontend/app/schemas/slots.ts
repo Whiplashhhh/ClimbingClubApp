@@ -16,6 +16,14 @@ export const slotMemberSchema = z.object({
   displayName: z.string(),
 }) satisfies z.ZodType<components['schemas']['SlotMemberResponse']>
 
+export const slotChangeSchema = z.object({
+  id: z.uuid(),
+  date: z.string(),
+  action: z.enum(['CANCELLED', 'MOVED']),
+  newStartTime: z.string().optional(),
+  note: z.string().optional(),
+}) satisfies z.ZodType<components['schemas']['SlotChangeResponse']>
+
 export const slotSchema = z.object({
   id: z.uuid(),
   name: z.string(),
@@ -25,11 +33,20 @@ export const slotSchema = z.object({
   coachId: z.uuid(),
   coachDisplayName: z.string(),
   members: z.array(slotMemberSchema),
+  changes: z.array(slotChangeSchema),
 }) satisfies z.ZodType<components['schemas']['SlotResponse']>
 
 export type DayOfWeek = z.infer<typeof dayOfWeekSchema>
 export type SlotMember = z.infer<typeof slotMemberSchema>
+export type SlotChange = z.infer<typeof slotChangeSchema>
 export type Slot = z.infer<typeof slotSchema>
+
+export interface CreateSlotChangePayload {
+  date: string
+  action: SlotChange['action']
+  newStartTime?: string
+  note?: string
+}
 
 export const dayLabels: Record<DayOfWeek, string> = {
   MONDAY: 'Lundi',
