@@ -77,6 +77,27 @@ describe('feed page', () => {
     expect(wrapper.text()).toContain('Assemblée générale')
   })
 
+  it('shows a join-requests banner to admins when requests are pending', async () => {
+    apiFetchMock.mockImplementation(async (path: unknown) => {
+      if (path === '/api/members/pending')
+        return [
+          {
+            id: '44444444-4444-4444-8444-444444444444',
+            displayName: 'Grimpeur',
+            email: 'grimpeur@club.fr',
+          },
+        ]
+      return feedPage
+    })
+    const auth = useAuthStore()
+    auth.me = ownerMe
+    auth.initialized = true
+
+    wrapper = await mountSuspended(IndexPage)
+    expect(wrapper.find('[data-testid="pending-banner"]').exists()).toBe(true)
+    expect(wrapper.text()).toContain("demande d'adhésion en attente")
+  })
+
   it('shows the pending banner instead of the feed for pending members', async () => {
     const auth = useAuthStore()
     auth.me = { ...ownerMe, role: 'MEMBER', status: 'PENDING' }
