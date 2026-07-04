@@ -246,6 +246,15 @@ class SlotIntegrationTest {
                 .contains("Ados jeudi")
                 .contains("annulée")
                 .contains("Coach malade");
+
+        // L'annulation est aussi publiée dans le fil de l'élève (post CANCELLATION au nom du
+        // moniteur), pas dans celui des membres hors groupe
+        JsonNode memberFeedItem =
+                member.get("/api/feed", JsonNode.class).getBody().path("items").get(0);
+        assertThat(memberFeedItem.path("type").asText()).isEqualTo("CANCELLATION");
+        assertThat(memberFeedItem.path("title").asText()).contains("Ados jeudi").contains("annulée");
+        assertThat(memberFeedItem.path("body").asText()).isEqualTo("Coach malade");
+        assertThat(feedTitles(member2)).noneMatch(title -> title.contains("annulée"));
         assertThat(member2.get("/api/notifications", JsonNode.class)
                         .getBody()
                         .path("unreadCount")
@@ -275,11 +284,13 @@ class SlotIntegrationTest {
                         .asLong())
                 .isZero();
 
-        // Rétablir la séance, puis décaler une autre : nouvelle notification avec l'heure
+        // Rétablir la séance : le post automatique disparaît du fil ; puis décaler une autre
+        // séance → nouvelle notification avec l'heure
         String changeId = cancelled.getBody().path("changes").get(0).path("id").asText();
         assertThat(coach.delete("/api/slots/" + slotId + "/changes/" + changeId, JsonNode.class)
                         .getStatusCode())
                 .isEqualTo(HttpStatus.OK);
+        assertThat(feedTitles(member)).noneMatch(title -> title.contains("annulée"));
         coach.post(
                 "/api/slots/" + slotId + "/changes",
                 Map.of(

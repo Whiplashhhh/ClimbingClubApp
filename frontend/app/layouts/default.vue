@@ -1,18 +1,40 @@
 <script setup lang="ts">
+import { onClickOutside } from '@vueuse/core'
+
 const auth = useAuthStore()
 const notificationsStore = useNotificationsStore()
 const route = useRoute()
 
-// Pastille rafraîchie à l'arrivée et à chaque navigation (pas encore de push — Phase 7)
+// Menu du compte (avatar en haut à droite) — accueillera le profil plus tard
+const menuOpen = ref(false)
+const menuRoot = ref<HTMLElement | null>(null)
+onClickOutside(menuRoot, () => {
+  menuOpen.value = false
+})
+
+const initials = computed(() => {
+  const parts = (auth.me?.displayName ?? '').trim().split(/\s+/)
+  return parts
+    .slice(0, 2)
+    .map((part) => part.charAt(0).toUpperCase())
+    .join('')
+})
+
+// Pastille rafraîchie à l'arrivée, à chaque navigation, et périodiquement (pas encore de push)
 watch(
   () => [auth.isActive, route.path],
   () => {
+    menuOpen.value = false
     if (auth.isActive) notificationsStore.refreshUnreadCount()
   },
   { immediate: true },
 )
+useAutoRefresh(() => {
+  if (auth.isActive) notificationsStore.refreshUnreadCount()
+})
 
 async function onLogout() {
+  menuOpen.value = false
   await auth.logout()
   await navigateTo('/login')
 }
@@ -54,13 +76,40 @@ async function onLogout() {
                 {{ notificationsStore.unreadCount > 9 ? '9+' : notificationsStore.unreadCount }}
               </span>
             </NuxtLink>
-            <span class="truncate text-gray-700">{{ auth.me.displayName }}</span>
-            <button
-              class="shrink-0 rounded-md border border-gray-300 px-3 py-1 text-gray-600 hover:bg-gray-100"
-              @click="onLogout"
-            >
-              Se déconnecter
-            </button>
+            <div ref="menuRoot" class="relative shrink-0">
+              <button
+                type="button"
+                class="flex h-8 w-8 items-center justify-center rounded-full bg-indigo-600 text-xs font-semibold text-white hover:bg-indigo-700"
+                :aria-label="`Menu du compte de ${auth.me.displayName}`"
+                aria-haspopup="menu"
+                :aria-expanded="menuOpen"
+                data-testid="avatar-button"
+                @click="menuOpen = !menuOpen"
+              >
+                {{ initials }}
+              </button>
+              <div
+                v-if="menuOpen"
+                role="menu"
+                class="absolute top-full right-0 z-10 mt-2 w-56 rounded-lg border border-gray-200 bg-white py-1 shadow-lg"
+                data-testid="account-menu"
+              >
+                <div class="border-b border-gray-100 px-4 py-2">
+                  <p class="truncate text-sm font-medium text-gray-900">
+                    {{ auth.me.displayName }}
+                  </p>
+                  <p class="truncate text-xs text-gray-500">{{ auth.me.email }}</p>
+                </div>
+                <button
+                  type="button"
+                  role="menuitem"
+                  class="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50"
+                  @click="onLogout"
+                >
+                  Se déconnecter
+                </button>
+              </div>
+            </div>
           </div>
         </div>
         <!-- Rangée 2 : navigation, sur sa propre ligne pour rester lisible sur téléphone -->

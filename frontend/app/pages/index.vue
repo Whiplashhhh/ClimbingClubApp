@@ -58,24 +58,54 @@ async function refreshPendingCount() {
   }
 }
 
-await useAsyncData('feed', async () => {
+async function refresh() {
   if (auth.isActive) {
     await Promise.all([loadPage(0), refreshPendingCount()])
   }
+}
+
+await useAsyncData('feed', async () => {
+  await refresh()
   return true
 })
+
+useAutoRefresh(refresh)
 </script>
 
 <template>
   <div v-if="auth.me" class="flex flex-col gap-6">
-    <section>
-      <h1 class="text-2xl font-bold text-gray-900">{{ auth.me.organization.name }}</h1>
-      <p class="mt-1 text-sm text-gray-600">
-        {{ auth.me.displayName }}
-        <span class="ml-1 rounded bg-gray-100 px-2 py-0.5 text-xs text-gray-500">
-          code club : {{ auth.me.organization.slug }}
-        </span>
-      </p>
+    <section class="flex items-start justify-between gap-2">
+      <div>
+        <h1 class="text-2xl font-bold text-gray-900">{{ auth.me.organization.name }}</h1>
+        <p class="mt-1 text-sm text-gray-600">
+          {{ auth.me.displayName }}
+          <span class="ml-1 rounded bg-gray-100 px-2 py-0.5 text-xs text-gray-500">
+            code club : {{ auth.me.organization.slug }}
+          </span>
+        </p>
+      </div>
+      <button
+        v-if="auth.isActive"
+        type="button"
+        class="shrink-0 rounded-md border border-gray-300 p-2 text-gray-500 hover:bg-gray-100"
+        aria-label="Actualiser le fil"
+        data-testid="refresh-button"
+        @click="refresh"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          class="h-4 w-4"
+        >
+          <path d="M21 12a9 9 0 1 1-2.64-6.36L21 8" />
+          <path d="M21 3v5h-5" />
+        </svg>
+      </button>
     </section>
 
     <section

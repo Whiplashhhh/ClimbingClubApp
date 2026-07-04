@@ -104,6 +104,10 @@ await useAsyncData('slots', async () => {
   }
   return true
 })
+
+useAutoRefresh(() => {
+  if (auth.isActive) loadSlots()
+})
 </script>
 
 <template>
@@ -116,6 +120,9 @@ await useAsyncData('slots', async () => {
     </section>
 
     <template v-else>
+      <!-- Vue calendrier de la semaine, pour ceux qui gèrent des cours -->
+      <SlotsWeekAgenda v-if="canCreate" :slots="slots" />
+
       <form
         v-if="canCreate"
         class="flex flex-col gap-3 rounded-lg border border-gray-200 bg-white p-4"

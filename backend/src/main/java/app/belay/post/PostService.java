@@ -8,6 +8,7 @@ import app.belay.post.dto.CreatePosterRequest;
 import app.belay.post.dto.FeedPageResponse;
 import app.belay.post.dto.FeedPostResponse;
 import app.belay.storage.StorageService;
+import app.belay.user.AppUser;
 import app.belay.user.Role;
 import app.belay.user.UserRepository;
 import java.io.IOException;
@@ -97,6 +98,21 @@ public class PostService {
         if (objectKey != null) {
             storageService.delete(objectKey);
         }
+    }
+
+    /**
+     * Publication générée par l'application (ex. annulation de séance) au nom d'un auteur donné —
+     * pas de contrôle de rôle : la légitimité est vérifiée par le domaine appelant.
+     */
+    @Transactional
+    public Post createSystemPost(AppUser author, PostType type, PostAudience audience, String title, String body) {
+        return postRepository.save(new Post(author.getOrganization(), author, type, audience, title, body, null));
+    }
+
+    /** Suppression d'un post généré par l'application (jamais d'image associée). */
+    @Transactional
+    public void deleteSystemPost(Post post) {
+        postRepository.delete(post);
     }
 
     /** Matrice de permissions du fil : ORG → OWNER/ADMIN ; COACH_STUDENTS → COACH. */
