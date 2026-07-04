@@ -106,20 +106,20 @@ async function submit() {
       required
       maxlength="200"
       placeholder="Titre"
-      class="rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none"
+      class="rounded-md border border-gray-300 px-3 py-2 focus:border-indigo-500 focus:outline-none"
     >
     <textarea
       v-model="body"
       rows="3"
       maxlength="5000"
       placeholder="Message (optionnel)"
-      class="rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none"
+      class="rounded-md border border-gray-300 px-3 py-2 focus:border-indigo-500 focus:outline-none"
     />
     <input
       v-if="type === 'POSTER'"
       type="file"
       accept="image/jpeg,image/png,image/webp"
-      class="text-sm text-gray-600"
+      class="text-gray-600"
       @change="onFileChange"
     >
 
