@@ -34,7 +34,8 @@
 - [x] Skill `.claude/skills/full-stack-slice/SKILL.md` (recette tranche verticale)
 
 ## Phase 3 — Créneaux & groupes
-- [ ] Slots récurrents, rattachement des membres, groupe dérivé
+- [x] Slots récurrents, rattachement des membres, groupe dérivé (+ résolution de l'audience
+      COACH_STUDENTS du fil via les rattachements — A-005 refermée)
 - [ ] Annulation / décalage + notification in-app
 
 ## Phase 4 — Voies & murs
