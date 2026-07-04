@@ -46,7 +46,7 @@ public class RouteService {
         this.storageService = storageService;
     }
 
-    /** Cartographie du club : secteurs triés par nom, avec leurs voies et URLs signées. */
+    /** Cartographie du club : secteurs triés par nom, avec leurs voies (photos servies via /api/media). */
     @Transactional(readOnly = true)
     public List<SectorResponse> listSectors(UserPrincipal principal) {
         Map<UUID, List<RouteResponse>> routesBySector =
@@ -57,7 +57,7 @@ public class RouteService {
         return sectorRepository.findAllByOrganizationIdOrderByNameAsc(principal.organizationId()).stream()
                 .map(sector -> SectorResponse.from(
                         sector,
-                        presignOrNull(sector.getPhotoObjectKey()),
+                        publicUrlOrNull(sector.getPhotoObjectKey()),
                         routesBySector.getOrDefault(sector.getId(), List.of())))
                 .toList();
     }
@@ -69,7 +69,7 @@ public class RouteService {
                 : storageService.storeImage(bytesOf(photo), "sectors/" + principal.organizationId());
         Sector sector = sectorRepository.save(new Sector(
                 organizationRepository.getReferenceById(principal.organizationId()), request.name(), objectKey));
-        return SectorResponse.from(sector, presignOrNull(objectKey), List.of());
+        return SectorResponse.from(sector, publicUrlOrNull(objectKey), List.of());
     }
 
     @Transactional
@@ -137,11 +137,11 @@ public class RouteService {
     }
 
     private RouteResponse toResponse(Route route) {
-        return RouteResponse.from(route, presignOrNull(route.getPhotoObjectKey()));
+        return RouteResponse.from(route, publicUrlOrNull(route.getPhotoObjectKey()));
     }
 
-    private String presignOrNull(String objectKey) {
-        return objectKey == null ? null : storageService.presignGet(objectKey);
+    private String publicUrlOrNull(String objectKey) {
+        return objectKey == null ? null : storageService.publicUrl(objectKey);
     }
 
     private byte[] bytesOf(MultipartFile photo) {

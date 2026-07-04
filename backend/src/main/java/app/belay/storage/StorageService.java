@@ -1,38 +1,45 @@
 package app.belay.storage;
 
-import java.time.Duration;
+import app.belay.common.NotFoundException;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
+import software.amazon.awssdk.core.ResponseBytes;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.CreateBucketRequest;
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
+import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 import software.amazon.awssdk.services.s3.model.HeadBucketRequest;
 import software.amazon.awssdk.services.s3.model.NoSuchBucketException;
+import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
-import software.amazon.awssdk.services.s3.presigner.S3Presigner;
-import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest;
 
 /**
  * Stockage objet des images : contenu vérifié par octets magiques, clé regénérée (anti
- * path-traversal — aucun nom de fichier client ne touche la clé), lecture via URL signée à durée
- * limitée. Le bucket est privé : rien n'est servi directement.
+ * path-traversal — aucun nom de fichier client ne touche la clé), bucket privé jamais exposé.
+ * La lecture passe par l'application ({@code GET /api/media/**}, authentifié et scopé par
+ * organisation) — voir ADR 0006 (révisé) : plus d'URLs signées, donc aucun hôte MinIO à
+ * configurer côté client et aucune fuite hors session.
  */
 @Service
 public class StorageService {
 
+    /** Préfixe des URLs de lecture servies par l'application (même origine que l'API). */
+    public static final String MEDIA_URL_PREFIX = "/api/media/";
+
     private final S3Client s3Client;
-    private final S3Presigner s3Presigner;
     private final StorageProperties properties;
 
     private volatile boolean bucketReady = false;
 
-    public StorageService(S3Client s3Client, S3Presigner s3Presigner, StorageProperties properties) {
+    public StorageService(S3Client s3Client, StorageProperties properties) {
         this.s3Client = s3Client;
-        this.s3Presigner = s3Presigner;
         this.properties = properties;
     }
+
+    /** Contenu et type d'un objet, tel que servi par {@code /api/media/**}. */
+    public record StoredMedia(byte[] content, String contentType) {}
 
     /**
      * Valide le contenu (image JPEG/PNG/WebP uniquement) et le stocke sous une clé regénérée
@@ -57,17 +64,21 @@ public class StorageService {
         return key;
     }
 
-    /** URL signée de lecture, à durée limitée (belay.storage.presign-ttl). */
-    public String presignGet(String objectKey) {
-        Duration ttl = properties.presignTtl();
-        var presigned = s3Presigner.presignGetObject(GetObjectPresignRequest.builder()
-                .signatureDuration(ttl)
-                .getObjectRequest(GetObjectRequest.builder()
-                        .bucket(properties.bucket())
-                        .key(objectKey)
-                        .build())
-                .build());
-        return presigned.url().toString();
+    /** URL de lecture relative à l'application — valable quel que soit l'hôte du déploiement. */
+    public String publicUrl(String objectKey) {
+        return MEDIA_URL_PREFIX + objectKey;
+    }
+
+    public StoredMedia fetch(String objectKey) {
+        try {
+            ResponseBytes<GetObjectResponse> bytes = s3Client.getObjectAsBytes(GetObjectRequest.builder()
+                    .bucket(properties.bucket())
+                    .key(objectKey)
+                    .build());
+            return new StoredMedia(bytes.asByteArray(), bytes.response().contentType());
+        } catch (NoSuchKeyException | NoSuchBucketException e) {
+            throw new NotFoundException("Media not found");
+        }
     }
 
     public void delete(String objectKey) {

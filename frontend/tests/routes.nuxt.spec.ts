@@ -25,7 +25,7 @@ const sectors = [
   {
     id: '33333333-3333-4333-8333-333333333333',
     name: 'Dévers',
-    photoUrl: 'https://minio.example/mur.png?X-Amz-Signature=abc',
+    photoUrl: '/api/media/sectors/22222222-2222-4222-8222-222222222222/mur.png',
     routes: [
       {
         id: '44444444-4444-4444-8444-444444444444',
@@ -33,7 +33,7 @@ const sectors = [
         name: 'La bleue',
         grade: '6a+',
         climbType: 'BOULDER',
-        photoUrl: 'https://minio.example/voie.png?X-Amz-Signature=def',
+        photoUrl: '/api/media/routes/22222222-2222-4222-8222-222222222222/voie.png',
         holds: [
           { x: 0.25, y: 0.8 },
           { x: 0.5, y: 0.55 },
@@ -80,6 +80,14 @@ describe('routes page', () => {
     const overlay = wrapper.find('[data-testid="holds-overlay"]')
     expect(overlay.exists()).toBe(true)
     expect(overlay.findAll('circle')).toHaveLength(2)
+
+    // L'éditeur de prises : entrer en édition puis enregistrer → PUT /holds
+    await wrapper.find('[data-testid="edit-holds"]').trigger('click')
+    await wrapper.find('[data-testid="save-holds"]').trigger('click')
+    expect(apiFetchMock).toHaveBeenCalledWith(
+      `/api/routes/${sectors[0]!.routes[0]!.id}/holds`,
+      { method: 'PUT', body: { holds: sectors[0]!.routes[0]!.holds } },
+    )
   })
 
   it('is read-only for plain members', async () => {
@@ -92,5 +100,6 @@ describe('routes page', () => {
     expect(wrapper.find('[data-testid="route-form"]').exists()).toBe(false)
     expect(wrapper.text()).toContain('La bleue')
     expect(wrapper.find('[data-testid="holds-overlay"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="edit-holds"]').exists()).toBe(false)
   })
 })

@@ -4,6 +4,7 @@ import {
   climbTypeLabels,
   sectorSchema,
   type ClimbType,
+  type Hold,
   type Route,
   type Sector,
 } from '~/schemas/routes'
@@ -80,6 +81,10 @@ async function createRoute() {
 
 async function deleteRoute(routeId: string) {
   await mutate(() => apiFetch(`/api/routes/${routeId}`, { method: 'DELETE' }))
+}
+
+async function saveHolds(routeId: string, holds: Hold[]) {
+  await mutate(() => apiFetch(`/api/routes/${routeId}/holds`, { method: 'PUT', body: { holds } }))
 }
 
 async function deleteSector(sectorId: string) {
@@ -276,7 +281,11 @@ useAutoRefresh(() => {
               Supprimer
             </button>
           </div>
-          <RoutesRoutePhoto :route="route" />
+          <RoutesRoutePhoto
+            :route="route"
+            :can-edit="canManageRoute(route)"
+            @save-holds="saveHolds"
+          />
           <p class="text-xs text-gray-500">Par {{ route.createdByDisplayName }}</p>
         </article>
       </section>

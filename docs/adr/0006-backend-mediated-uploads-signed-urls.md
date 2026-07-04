@@ -1,6 +1,10 @@
 # 0006 — Uploads médiés par le backend, lecture par URLs signées
 
-Date : 2026-07-03 · Statut : accepté
+Date : 2026-07-03 · Statut : accepté — **amendé le 2026-07-04** : la lecture par URLs
+signées est remplacée par un endpoint applicatif `GET /api/media/**` (authentifié, scopé par
+organisation via le préfixe de clé). Raisons : les URLs signées embarquent l'hôte MinIO
+(`S3_PUBLIC_ENDPOINT`), fragile selon le réseau du client (images cassées en déploiement
+Tailscale), et elles fuitent hors session. MinIO n'est plus exposé au réseau du tout.
 
 ## Contexte
 

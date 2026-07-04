@@ -19,7 +19,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.client.MultipartBodyBuilder;
-import org.springframework.web.client.RestTemplate;
 
 /**
  * Chemin critique du fil : publication (matrice de permissions par audience), agrégation,
@@ -118,13 +117,29 @@ class FeedIntegrationTest {
         assertThat(created.getStatusCode()).isEqualTo(HttpStatus.CREATED);
         JsonNode urls = created.getBody().path("imageUrls");
         assertThat(urls).hasSize(2);
-        assertThat(urls.get(0).asText()).contains("X-Amz-Signature");
+        assertThat(urls.get(0).asText()).startsWith("/api/media/posts/");
 
-        // L'URL signée sert bien la première image (URI.create : ne pas ré-encoder la signature)
-        ResponseEntity<byte[]> download =
-                new RestTemplate().getForEntity(java.net.URI.create(urls.get(0).asText()), byte[].class);
+        // L'image est servie par l'application, authentifiée, avec le bon Content-Type
+        ResponseEntity<byte[]> download = member.get(urls.get(0).asText(), byte[].class);
         assertThat(download.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(download.getHeaders().getContentType()).isEqualTo(MediaType.IMAGE_PNG);
+
+        // Un membre d'un AUTRE club ne peut pas lire ce média (clé hors de son organisation → 404)
+        ApiActor outsider = new ApiActor(port);
+        outsider.post(
+                "/api/auth/register",
+                Map.of(
+                        "email",
+                        "outsider-" + tag + "@club.fr",
+                        "password",
+                        "s3cure-password",
+                        "displayName",
+                        "Outsider",
+                        "createOrganization",
+                        Map.of("name", "Club B " + tag, "climbingType", "BOULDER")),
+                JsonNode.class);
+        assertThat(outsider.get(urls.get(0).asText(), byte[].class).getStatusCode())
+                .isEqualTo(HttpStatus.NOT_FOUND);
 
         // Le membre voit le post et ses deux images dans son fil
         JsonNode feedItem =
