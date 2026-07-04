@@ -2,6 +2,7 @@ package app.belay.slot;
 
 import app.belay.auth.UserPrincipal;
 import app.belay.slot.dto.AddSlotMemberRequest;
+import app.belay.slot.dto.CreateSlotChangeRequest;
 import app.belay.slot.dto.CreateSlotRequest;
 import app.belay.slot.dto.SlotResponse;
 import app.belay.slot.dto.UpdateSlotRequest;
@@ -92,5 +93,28 @@ public class SlotController {
     public SlotResponse removeMember(
             @AuthenticationPrincipal UserPrincipal principal, @PathVariable UUID slotId, @PathVariable UUID userId) {
         return slotService.removeMember(principal, slotId, userId);
+    }
+
+    @PostMapping("/{slotId}/changes")
+    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN', 'COACH')")
+    @ResponseStatus(HttpStatus.CREATED)
+    @Operation(summary = "Cancel or move one session at a given date — notifies the slot's group in-app")
+    @ApiResponse(responseCode = "400", description = "Date in the past / not on the slot's weekday / bad newStartTime")
+    @ApiResponse(responseCode = "404", description = "Slot not found in the caller's organization")
+    @ApiResponse(responseCode = "409", description = "This session is already cancelled or moved")
+    public SlotResponse createChange(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @PathVariable UUID slotId,
+            @Valid @RequestBody CreateSlotChangeRequest body) {
+        return slotService.createChange(principal, slotId, body);
+    }
+
+    @DeleteMapping("/{slotId}/changes/{changeId}")
+    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN', 'COACH')")
+    @Operation(summary = "Revert a session cancellation/move (admins or the slot's coach)")
+    @ApiResponse(responseCode = "404", description = "Slot or change not found")
+    public SlotResponse deleteChange(
+            @AuthenticationPrincipal UserPrincipal principal, @PathVariable UUID slotId, @PathVariable UUID changeId) {
+        return slotService.deleteChange(principal, slotId, changeId);
     }
 }

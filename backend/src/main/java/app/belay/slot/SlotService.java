@@ -3,9 +3,13 @@ package app.belay.slot;
 import app.belay.auth.UserPrincipal;
 import app.belay.common.ConflictException;
 import app.belay.common.NotFoundException;
+import app.belay.notification.NotificationService;
+import app.belay.notification.NotificationType;
 import app.belay.organization.OrganizationRepository;
 import app.belay.slot.dto.AddSlotMemberRequest;
+import app.belay.slot.dto.CreateSlotChangeRequest;
 import app.belay.slot.dto.CreateSlotRequest;
+import app.belay.slot.dto.SlotChangeResponse;
 import app.belay.slot.dto.SlotMemberResponse;
 import app.belay.slot.dto.SlotResponse;
 import app.belay.slot.dto.UpdateSlotRequest;
@@ -13,9 +17,13 @@ import app.belay.user.AppUser;
 import app.belay.user.Role;
 import app.belay.user.UserRepository;
 import app.belay.user.UserStatus;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import org.springframework.security.access.AccessDeniedException;
@@ -25,23 +33,32 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class SlotService {
 
+    private static final DateTimeFormatter FR_DATE = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+    private static final DateTimeFormatter FR_TIME = DateTimeFormatter.ofPattern("HH:mm");
+
     private final SlotRepository slotRepository;
     private final SlotMembershipRepository membershipRepository;
+    private final SlotChangeRepository changeRepository;
     private final UserRepository userRepository;
     private final OrganizationRepository organizationRepository;
+    private final NotificationService notificationService;
 
     public SlotService(
             SlotRepository slotRepository,
             SlotMembershipRepository membershipRepository,
+            SlotChangeRepository changeRepository,
             UserRepository userRepository,
-            OrganizationRepository organizationRepository) {
+            OrganizationRepository organizationRepository,
+            NotificationService notificationService) {
         this.slotRepository = slotRepository;
         this.membershipRepository = membershipRepository;
+        this.changeRepository = changeRepository;
         this.userRepository = userRepository;
         this.organizationRepository = organizationRepository;
+        this.notificationService = notificationService;
     }
 
-    /** Planning du club, trié par jour puis heure, avec le groupe de chaque créneau. */
+    /** Planning du club, trié par jour puis heure, avec le groupe et les séances modifiées à venir. */
     @Transactional(readOnly = true)
     public List<SlotResponse> listSlots(UserPrincipal principal) {
         Map<UUID, List<SlotMemberResponse>> membersBySlot =
@@ -49,9 +66,17 @@ public class SlotService {
                         .collect(Collectors.groupingBy(
                                 m -> m.getSlot().getId(),
                                 Collectors.mapping(m -> SlotMemberResponse.from(m.getUser()), Collectors.toList())));
+        Map<UUID, List<SlotChangeResponse>> changesBySlot =
+                changeRepository.findUpcomingByOrganizationId(principal.organizationId(), LocalDate.now()).stream()
+                        .collect(Collectors.groupingBy(
+                                c -> c.getSlot().getId(),
+                                Collectors.mapping(SlotChangeResponse::from, Collectors.toList())));
         return slotRepository.findAllByOrganizationId(principal.organizationId()).stream()
                 .sorted(Comparator.comparing(Slot::getDayOfWeek).thenComparing(Slot::getStartTime))
-                .map(slot -> SlotResponse.from(slot, membersBySlot.getOrDefault(slot.getId(), List.of())))
+                .map(slot -> SlotResponse.from(
+                        slot,
+                        membersBySlot.getOrDefault(slot.getId(), List.of()),
+                        changesBySlot.getOrDefault(slot.getId(), List.of())))
                 .toList();
     }
 
@@ -73,7 +98,7 @@ public class SlotService {
                 request.dayOfWeek(),
                 request.startTime(),
                 request.durationMinutes()));
-        return SlotResponse.from(slot, List.of());
+        return SlotResponse.from(slot, List.of(), List.of());
     }
 
     @Transactional
@@ -83,12 +108,13 @@ public class SlotService {
         slot.setDayOfWeek(request.dayOfWeek());
         slot.setStartTime(request.startTime());
         slot.setDurationMinutes(request.durationMinutes());
-        return SlotResponse.from(slot, membersOf(slotId));
+        return toResponse(slot);
     }
 
     @Transactional
     public void deleteSlot(UserPrincipal principal, UUID slotId) {
         Slot slot = findManagedSlot(principal, slotId);
+        changeRepository.deleteAll(changeRepository.findAllBySlotId(slotId));
         membershipRepository.deleteAll(membershipRepository.findAllBySlotId(slotId));
         slotRepository.delete(slot);
     }
@@ -107,7 +133,7 @@ public class SlotService {
         }
         membershipRepository.save(
                 new SlotMembership(organizationRepository.getReferenceById(principal.organizationId()), slot, member));
-        return SlotResponse.from(slot, membersOf(slotId));
+        return toResponse(slot);
     }
 
     @Transactional
@@ -117,7 +143,68 @@ public class SlotService {
                 .findBySlotIdAndUserId(slotId, userId)
                 .orElseThrow(() -> new NotFoundException("Member is not in this slot"));
         membershipRepository.delete(membership);
-        return SlotResponse.from(slot, membersOf(slotId));
+        return toResponse(slot);
+    }
+
+    /** Annule ou décale UNE séance (à une date donnée) et notifie le groupe du créneau. */
+    @Transactional
+    public SlotResponse createChange(UserPrincipal principal, UUID slotId, CreateSlotChangeRequest request) {
+        Slot slot = findManagedSlot(principal, slotId);
+        if (request.date().isBefore(LocalDate.now())) {
+            throw new IllegalArgumentException("The session date is in the past");
+        }
+        if (request.date().getDayOfWeek() != slot.getDayOfWeek()) {
+            throw new IllegalArgumentException("The date does not fall on the slot's weekday");
+        }
+        boolean moved = request.action() == SlotChangeAction.MOVED;
+        if (moved == (request.newStartTime() == null)) {
+            throw new IllegalArgumentException("newStartTime is required when MOVED, and only then");
+        }
+        if (changeRepository.existsBySlotIdAndDate(slotId, request.date())) {
+            throw new ConflictException("This session is already cancelled or moved");
+        }
+        SlotChange change = changeRepository.save(new SlotChange(
+                organizationRepository.getReferenceById(principal.organizationId()),
+                slot,
+                request.date(),
+                request.action(),
+                request.newStartTime(),
+                request.note(),
+                userRepository.getReferenceById(principal.id())));
+        notifyGroup(principal, slot, change);
+        return toResponse(slot);
+    }
+
+    @Transactional
+    public SlotResponse deleteChange(UserPrincipal principal, UUID slotId, UUID changeId) {
+        Slot slot = findManagedSlot(principal, slotId);
+        SlotChange change = changeRepository
+                .findByIdAndSlotId(changeId, slotId)
+                .orElseThrow(() -> new NotFoundException("Change not found"));
+        changeRepository.delete(change);
+        return toResponse(slot);
+    }
+
+    /** Destinataires : le groupe + le moniteur, sauf l'auteur de l'action. Message en français (A-004). */
+    private void notifyGroup(UserPrincipal actor, Slot slot, SlotChange change) {
+        Set<AppUser> recipients = membershipRepository.findAllBySlotId(slot.getId()).stream()
+                .map(SlotMembership::getUser)
+                .collect(Collectors.toCollection(HashSet::new));
+        recipients.add(slot.getCoach());
+        recipients.removeIf(user -> user.getId().equals(actor.id()));
+
+        String when = FR_DATE.format(change.getDate());
+        String message = change.getAction() == SlotChangeAction.CANCELLED
+                ? "Séance « %s » du %s annulée".formatted(slot.getName(), when)
+                : "Séance « %s » du %s décalée à %s"
+                        .formatted(slot.getName(), when, FR_TIME.format(change.getNewStartTime()));
+        if (change.getNote() != null && !change.getNote().isBlank()) {
+            message += " — " + change.getNote();
+        }
+        NotificationType type = change.getAction() == SlotChangeAction.CANCELLED
+                ? NotificationType.SLOT_CANCELLED
+                : NotificationType.SLOT_MOVED;
+        notificationService.notifyAll(slot.getOrganization(), recipients, type, message);
     }
 
     /** Scope tenancy (hors org → 404) puis autorisation : admins, ou le moniteur du créneau. */
@@ -142,9 +229,16 @@ public class SlotService {
         return principal.role() == Role.OWNER || principal.role() == Role.ADMIN;
     }
 
-    private List<SlotMemberResponse> membersOf(UUID slotId) {
-        return membershipRepository.findAllBySlotId(slotId).stream()
+    private SlotResponse toResponse(Slot slot) {
+        List<SlotMemberResponse> members = membershipRepository.findAllBySlotId(slot.getId()).stream()
                 .map(m -> SlotMemberResponse.from(m.getUser()))
                 .toList();
+        List<SlotChangeResponse> changes =
+                changeRepository
+                        .findAllBySlotIdAndDateGreaterThanEqualOrderByDateAsc(slot.getId(), LocalDate.now())
+                        .stream()
+                        .map(SlotChangeResponse::from)
+                        .toList();
+        return SlotResponse.from(slot, members, changes);
     }
 }
