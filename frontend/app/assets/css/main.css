@@ -1,1 +1,11 @@
 @import 'tailwindcss';
+
+@layer base {
+  /* iOS zoome automatiquement (et ne dézoome pas) au focus d'un champ dont la
+     police fait moins de 16px : imposer 1rem sur tous les contrôles de saisie. */
+  input,
+  select,
+  textarea {
+    font-size: 1rem;
+  }
+}
