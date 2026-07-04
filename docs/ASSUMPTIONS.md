@@ -23,3 +23,7 @@ Hypothèses prises faute d'information, avec le défaut le plus raisonnable. À 
   bout (Testcontainers : Postgres + Redis + MinIO réels, HTTP réel, CSRF réel) + tests de
   composants Vitest. Les e2e navigateur Playwright seront introduits quand l'UI aura assez de
   surface pour les rentabiliser (Phase 7 au plus tard).
+- **A-009** (2026-07-04) : Récurrence des créneaux : **hebdomadaire** uniquement en v1 (jour de
+  la semaine + heure + durée). Le « moniteur » d'un créneau doit être un membre actif avec un
+  rôle COACH, ADMIN ou OWNER (un président de petit club peut animer ses cours) — jamais un
+  simple MEMBER. Un moniteur ne crée/gère que ses propres créneaux ; un admin gère tout.

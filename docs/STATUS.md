@@ -1,6 +1,6 @@
 # État d'avancement — Belay
 
-> Mis à jour : 2026-07-03 (fin de la session « Phase 2 — fil d'accueil »).
+> Mis à jour : 2026-07-04 (Phase 3 partie A : créneaux & groupes).
 
 ## Fait (mergé dans `main`, CI verte)
 
@@ -26,26 +26,36 @@
   - skill `.claude/skills/full-stack-slice/SKILL.md` (recette des tranches suivantes) ;
   - ménage : Thymeleaf/openhtmltopdf retirés de la stack (A-006).
 
+## Fait aussi (suite au test terrain sur iPhone + Phase 3 partie A)
+
+- **Déploiement auto-hébergé** documenté et testé (`docs/DEPLOY.md`) : serveur perso via
+  Tailscale, ports custom committés par Willem sur `main` (front : 3003).
+- **Correctifs terrain** : `app.vue` sans `NuxtLayout` (en-tête/déconnexion invisibles — corrigé,
+  en-tête responsive), bannière de demandes d'adhésion sur le fil, zoom iOS au focus des champs
+  (16px imposés).
+- **Phase 3 partie A — créneaux & groupes** : `Slot` hebdomadaire (jour/heure/durée/moniteur) +
+  `SlotMembership` (V4), API scopée avec matrice (admins partout, moniteur sur ses créneaux,
+  coach éligible = ACTIVE non-MEMBER — A-009), **le fil résout enfin COACH_STUDENTS via les
+  rattachements (A-005 refermée)**, page `/slots` (planning, création, gestion du groupe),
+  sélecteur de rôle sur `/members`, tests intégration + vitest.
+
 ## En cours
 
-- Rien — la tranche Phase 2 se termine avec cette PR.
+- Rien — la partie A de la Phase 3 se termine avec cette PR.
 
 ## Prochaines étapes (dans l'ordre de la ROADMAP)
 
-1. **Phase 3 — Créneaux & groupes** : slots récurrents, rattachement des membres, groupe dérivé,
-   annulation/décalage + notification in-app. Ceci activera la vraie résolution de l'audience
-   COACH_STUDENTS (A-005) : brancher `PostRepository.findFeed` sur `SlotMembership`.
+1. **Phase 3 partie B** : annulation / décalage d'une séance de créneau (à une date donnée) →
+   notifications in-app pour le groupe (cloche + pastille) + post CANCELLATION automatique.
 2. **Phase 4 — Voies & murs** (secteurs, voies, overlay d'annotations en lecture).
 3. Phases 5-7 (séances & social, sondages & messagerie, finitions PWA).
 
 ## Points d'attention
 
-- **A-005** : tant que la Phase 3 n'existe pas, un post COACH_STUDENTS n'est visible que par son
-  auteur — comportement voulu, mais à rebrancher dès que `SlotMembership` existe (le point
-  d'entrée est la requête `PostRepository.findFeed`).
 - **URLs signées** : la signature S3 inclut l'hôte → `S3_PUBLIC_ENDPOINT` doit être l'URL de
   MinIO vue du navigateur (compose : `http://localhost:9000` par défaut).
 - **E2e navigateur** : pas encore de Playwright (A-008) ; le chemin critique est couvert par les
   tests d'intégration API + vitest.
-- Lint front : 10 warnings `vue/html-self-closing` préexistants (conflit avec Prettier sur les
-  éléments void) — zéro erreur ; à trancher un jour dans la config ESLint.
+- Les ports publiés sont personnalisés directement dans `docker-compose.yml` sur `main` (choix
+  de Willem pour son serveur) ; l'alternative `docker-compose.override.yml` est documentée dans
+  DEPLOY.md si on veut revenir aux défauts dans le repo.

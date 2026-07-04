@@ -12,6 +12,9 @@
     "name" : "feed",
     "description" : "Home feed: posts with an audience, aggregated per user (tenant-scoped)"
   }, {
+    "name" : "slots",
+    "description" : "Weekly recurring training slots and their member groups (tenant-scoped)"
+  }, {
     "name" : "auth",
     "description" : "Registration, login and session management"
   }, {
@@ -19,6 +22,193 @@
     "description" : "Organization members management (tenant-scoped)"
   } ],
   "paths" : {
+    "/api/slots/{slotId}" : {
+      "put" : {
+        "tags" : [ "slots" ],
+        "summary" : "Update a slot (admins or the slot's coach)",
+        "operationId" : "updateSlot",
+        "parameters" : [ {
+          "name" : "slotId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/UpdateSlotRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "404" : {
+            "description" : "Slot not found in the caller's organization",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SlotResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete" : {
+        "tags" : [ "slots" ],
+        "summary" : "Delete a slot and its memberships (admins or the slot's coach)",
+        "operationId" : "deleteSlot",
+        "parameters" : [ {
+          "name" : "slotId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "404" : {
+            "description" : "Slot not found in the caller's organization"
+          },
+          "204" : {
+            "description" : "No Content"
+          }
+        }
+      }
+    },
+    "/api/slots" : {
+      "get" : {
+        "tags" : [ "slots" ],
+        "summary" : "List the club's slots with coach and group members",
+        "operationId" : "listSlots",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/SlotResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post" : {
+        "tags" : [ "slots" ],
+        "summary" : "Create a weekly slot (coaches: own slots only; admins: any eligible coach)",
+        "operationId" : "createSlot",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/CreateSlotRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "403" : {
+            "description" : "Coach tried to create a slot for someone else",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SlotResponse"
+                }
+              }
+            }
+          },
+          "409" : {
+            "description" : "Target coach is not an active coach or admin",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SlotResponse"
+                }
+              }
+            }
+          },
+          "201" : {
+            "description" : "Created",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SlotResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/slots/{slotId}/members" : {
+      "post" : {
+        "tags" : [ "slots" ],
+        "summary" : "Add an active member to the slot's group (admins or the slot's coach)",
+        "operationId" : "addMember",
+        "parameters" : [ {
+          "name" : "slotId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/AddSlotMemberRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "404" : {
+            "description" : "Slot or member not found in the caller's organization",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SlotResponse"
+                }
+              }
+            }
+          },
+          "409" : {
+            "description" : "Member is pending/disabled or already in the slot",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SlotResponse"
+                }
+              }
+            }
+          },
+          "201" : {
+            "description" : "Created",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SlotResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/posts" : {
       "post" : {
         "tags" : [ "feed" ],
@@ -411,6 +601,42 @@
         }
       }
     },
+    "/api/slots/{slotId}/members/{userId}" : {
+      "delete" : {
+        "tags" : [ "slots" ],
+        "summary" : "Remove a member from the slot's group (admins or the slot's coach)",
+        "operationId" : "removeMember",
+        "parameters" : [ {
+          "name" : "slotId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "name" : "userId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "404" : {
+            "description" : "Slot or membership not found",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SlotResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/posts/{postId}" : {
       "delete" : {
         "tags" : [ "feed" ],
@@ -438,6 +664,123 @@
   },
   "components" : {
     "schemas" : {
+      "UpdateSlotRequest" : {
+        "type" : "object",
+        "properties" : {
+          "name" : {
+            "type" : "string",
+            "maxLength" : 120,
+            "minLength" : 0
+          },
+          "dayOfWeek" : {
+            "type" : "string",
+            "enum" : [ "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY", "SUNDAY" ]
+          },
+          "startTime" : {
+            "type" : "string",
+            "format" : "partial-time",
+            "example" : "18:00"
+          },
+          "durationMinutes" : {
+            "type" : "integer",
+            "format" : "int32",
+            "maximum" : 600,
+            "minimum" : 15
+          }
+        },
+        "required" : [ "dayOfWeek", "durationMinutes", "name", "startTime" ]
+      },
+      "SlotMemberResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "displayName" : {
+            "type" : "string"
+          }
+        }
+      },
+      "SlotResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "dayOfWeek" : {
+            "type" : "string",
+            "enum" : [ "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY", "SUNDAY" ]
+          },
+          "startTime" : {
+            "type" : "string",
+            "format" : "partial-time",
+            "example" : "18:00"
+          },
+          "durationMinutes" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "coachId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "coachDisplayName" : {
+            "type" : "string"
+          },
+          "members" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/SlotMemberResponse"
+            }
+          }
+        }
+      },
+      "CreateSlotRequest" : {
+        "type" : "object",
+        "properties" : {
+          "name" : {
+            "type" : "string",
+            "maxLength" : 120,
+            "minLength" : 0
+          },
+          "dayOfWeek" : {
+            "type" : "string",
+            "enum" : [ "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY", "SUNDAY" ]
+          },
+          "startTime" : {
+            "type" : "string",
+            "format" : "partial-time",
+            "example" : "18:00"
+          },
+          "durationMinutes" : {
+            "type" : "integer",
+            "format" : "int32",
+            "maximum" : 600,
+            "minimum" : 15
+          },
+          "coachId" : {
+            "type" : "string",
+            "format" : "uuid",
+            "description" : "Coach of the slot — defaults to the caller. Admins may target any eligible member."
+          }
+        },
+        "required" : [ "dayOfWeek", "durationMinutes", "name", "startTime" ]
+      },
+      "AddSlotMemberRequest" : {
+        "type" : "object",
+        "properties" : {
+          "userId" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        },
+        "required" : [ "userId" ]
+      },
       "CreatePostRequest" : {
         "type" : "object",
         "properties" : {

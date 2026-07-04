@@ -34,6 +34,13 @@ async function onLogout() {
             Fil
           </NuxtLink>
           <NuxtLink
+            to="/slots"
+            class="text-gray-600 hover:text-indigo-600"
+            exact-active-class="font-semibold text-indigo-600"
+          >
+            Créneaux
+          </NuxtLink>
+          <NuxtLink
             to="/members"
             class="text-gray-600 hover:text-indigo-600"
             exact-active-class="font-semibold text-indigo-600"
