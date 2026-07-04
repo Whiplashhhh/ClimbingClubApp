@@ -12,6 +12,9 @@
     "name" : "notifications",
     "description" : "In-app notifications of the authenticated member"
   }, {
+    "name" : "media",
+    "description" : "Authenticated, tenant-scoped delivery of stored images"
+  }, {
     "name" : "feed",
     "description" : "Home feed: posts with an audience, aggregated per user (tenant-scoped)"
   }, {
@@ -740,6 +743,34 @@
                   "items" : {
                     "$ref" : "#/components/schemas/PendingMemberResponse"
                   }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/media/{objectKey}" : {
+      "get" : {
+        "tags" : [ "media" ],
+        "summary" : "Stream a stored image (only keys belonging to the caller's organization)",
+        "operationId" : "get",
+        "parameters" : [ {
+          "name" : "objectKey",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "404" : {
+            "description" : "Unknown key or key outside the caller's organization",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "string",
+                  "format" : "byte"
                 }
               }
             }

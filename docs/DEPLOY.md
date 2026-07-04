@@ -21,14 +21,15 @@ cp .env.example .env
 nano .env
 ```
 
-Dans `.env`, change les mots de passe et surtout renseigne l'endpoint public MinIO —
-**les images d'affiches ne s'afficheront pas sans ça** (les URLs signées incluent l'hôte) :
+Dans `.env`, change les mots de passe :
 
 ```bash
 POSTGRES_PASSWORD=un-vrai-mot-de-passe
 MINIO_ROOT_PASSWORD=un-autre-vrai-mot-de-passe
-S3_PUBLIC_ENDPOINT=http://<TS_HOST>:9000
 ```
+
+(Les images sont servies par l'application elle-même via `/api/media` : aucune URL MinIO à
+configurer, quel que soit l'hôte.)
 
 Puis :
 
@@ -68,9 +69,8 @@ services:
 > port resterait publié en plus du nouveau. Si tu as déjà modifié `docker-compose.yml` :
 > reporte tes ports dans l'override puis `git checkout docker-compose.yml`.
 
-⚠️ Si tu changes le port hôte de MinIO, mets `S3_PUBLIC_ENDPOINT` en cohérence dans `.env`
-(ex. `http://<TS_HOST>:9002`), puis `docker compose up -d`. Les ports internes (le `:3000`,
-`:9000` à droite des mappings) ne changent jamais.
+Les ports internes (à droite des mappings) ne changent jamais. MinIO n'a plus besoin d'être
+joignable depuis le réseau : les images passent par l'application.
 
 ## Mettre à jour après un merge dans `main`
 
@@ -94,16 +94,16 @@ docker compose down                  # tout arrêter (les données persistent : 
 docker compose down -v               # tout arrêter ET effacer les données
 ```
 
-- **Les affiches ne s'affichent pas** → `S3_PUBLIC_ENDPOINT` absent ou faux dans `.env`
-  (doit être l'URL de MinIO vue du téléphone), puis `docker compose up -d` pour recharger.
+- **Les images ne s'affichent pas** → vérifier `docker compose logs backend` (MinIO joignable ?)
+  et que le volume `miniodata` n'a pas été effacé (`down -v`) alors que la base a survécu.
 - **Le front répond mais l'API échoue** → `docker compose logs backend` ; le back attend
   Postgres/Redis/MinIO healthy avant de démarrer.
 
 ## Exposition réseau (sécurité)
 
-Ports ouverts sur le serveur : **3000** (front), **8080** (API + Swagger), **9000** (MinIO,
-URLs signées). Postgres, Redis et la console MinIO (9001) sont liés à `127.0.0.1` — accessibles
-uniquement en SSH sur la machine. Tant que le serveur n'a pas de port forwarding public, seuls
+Ports ouverts sur le serveur : **le front** et **l'API (8080)**. Postgres, Redis et MinIO
+(9000/9001) sont liés à `127.0.0.1` — les images passent par l'application (`/api/media`),
+authentifiées par la session. Tant que le serveur n'a pas de port forwarding public, seuls
 les appareils du tailnet voient l'application.
 
 - Le cookie de session reste `Secure=false` ici car l'accès est en HTTP sur le tailnet (déjà

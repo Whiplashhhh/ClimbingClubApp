@@ -71,7 +71,7 @@ public class PostService {
                 // Clé scopée par organisation + regénérée : le nom de fichier client n'est jamais utilisé
                 String objectKey = storageService.storeImage(bytesOf(image), "posts/" + principal.organizationId());
                 postImageRepository.save(new PostImage(post.getOrganization(), post, objectKey, position++));
-                imageUrls.add(storageService.presignGet(objectKey));
+                imageUrls.add(storageService.publicUrl(objectKey));
             }
         }
         return FeedPostResponse.from(post, imageUrls);
@@ -90,8 +90,7 @@ public class PostService {
                         .collect(Collectors.groupingBy(
                                 image -> image.getPost().getId(),
                                 Collectors.mapping(
-                                        image -> storageService.presignGet(image.getObjectKey()),
-                                        Collectors.toList())));
+                                        image -> storageService.publicUrl(image.getObjectKey()), Collectors.toList())));
         List<FeedPostResponse> items = slice.getContent().stream()
                 .map(post -> FeedPostResponse.from(post, urlsByPost.getOrDefault(post.getId(), List.of())))
                 .toList();

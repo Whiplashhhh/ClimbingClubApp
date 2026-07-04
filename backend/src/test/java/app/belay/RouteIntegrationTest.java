@@ -88,7 +88,7 @@ class RouteIntegrationTest {
         ResponseEntity<JsonNode> route = createRoute(coach, sectorId, "La bleue", "6a+", true);
         assertThat(route.getStatusCode()).isEqualTo(HttpStatus.CREATED);
         String routeId = route.getBody().path("id").asText();
-        assertThat(route.getBody().path("photoUrl").asText()).contains("X-Amz-Signature");
+        assertThat(route.getBody().path("photoUrl").asText()).startsWith("/api/media/routes/");
 
         // Le moniteur annote les prises (coordonnées relatives) — rendues en overlay côté front
         ResponseEntity<JsonNode> annotated = coach.put(
@@ -101,7 +101,7 @@ class RouteIntegrationTest {
         JsonNode sectors = member.get("/api/sectors", JsonNode.class).getBody();
         JsonNode sector = sectors.get(0);
         assertThat(sector.path("name").asText()).isEqualTo("Dévers");
-        assertThat(sector.path("photoUrl").asText()).contains("X-Amz-Signature");
+        assertThat(sector.path("photoUrl").asText()).startsWith("/api/media/sectors/");
         JsonNode routeItem = sector.path("routes").get(0);
         assertThat(routeItem.path("name").asText()).isEqualTo("La bleue");
         assertThat(routeItem.path("grade").asText()).isEqualTo("6a+");

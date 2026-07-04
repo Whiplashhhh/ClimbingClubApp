@@ -31,13 +31,10 @@ spring:
 belay:
   storage:
     endpoint: ${S3_ENDPOINT:http://localhost:9000}
-    # URL vue par le navigateur pour les URLs signées (défaut : endpoint)
-    public-endpoint: ${S3_PUBLIC_ENDPOINT:}
     access-key: ${S3_ACCESS_KEY:minioadmin}
     secret-key: ${S3_SECRET_KEY:minioadmin}
     bucket: ${S3_BUCKET:belay-media}
     region: ${S3_REGION:us-east-1}
-    presign-ttl: 15m
 
 server:
   port: 8080
