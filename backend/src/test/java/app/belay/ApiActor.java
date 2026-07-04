@@ -52,6 +52,10 @@ public class ApiActor {
         return exchange(HttpMethod.PATCH, path, body, type, csrfToken());
     }
 
+    public <T> ResponseEntity<T> put(String path, Object body, Class<T> type) {
+        return exchange(HttpMethod.PUT, path, body, type, csrfToken());
+    }
+
     private <T> ResponseEntity<T> exchange(
             HttpMethod method, String path, Object body, Class<T> type, String csrfToken) {
         HttpHeaders headers = new HttpHeaders();

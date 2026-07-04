@@ -15,6 +15,9 @@
     "name" : "feed",
     "description" : "Home feed: posts with an audience, aggregated per user (tenant-scoped)"
   }, {
+    "name" : "routes",
+    "description" : "Wall map: sectors and their routes with hold annotations (tenant-scoped)"
+  }, {
     "name" : "slots",
     "description" : "Weekly recurring training slots and their member groups (tenant-scoped)"
   }, {
@@ -81,6 +84,44 @@
           },
           "204" : {
             "description" : "No Content"
+          }
+        }
+      }
+    },
+    "/api/routes/{routeId}/holds" : {
+      "put" : {
+        "tags" : [ "routes" ],
+        "summary" : "Replace the route's hold annotations (admins or its creator)",
+        "operationId" : "updateHolds",
+        "parameters" : [ {
+          "name" : "routeId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/UpdateHoldsRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "404" : {
+            "description" : "Route not found in the caller's organization",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RouteResponse"
+                }
+              }
+            }
           }
         }
       }
@@ -273,6 +314,112 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/SlotResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/sectors" : {
+      "get" : {
+        "tags" : [ "routes" ],
+        "summary" : "List the club's sectors with their routes, photos served through signed URLs",
+        "operationId" : "listSectors",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/SectorResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post" : {
+        "tags" : [ "routes" ],
+        "summary" : "Create a sector with an optional wall photo (admins)",
+        "operationId" : "createSector",
+        "requestBody" : {
+          "content" : {
+            "multipart/form-data" : {
+              "schema" : {
+                "type" : "object",
+                "properties" : {
+                  "meta" : {
+                    "$ref" : "#/components/schemas/CreateSectorRequest"
+                  },
+                  "photo" : {
+                    "type" : "string",
+                    "format" : "binary"
+                  }
+                },
+                "required" : [ "meta" ]
+              }
+            }
+          }
+        },
+        "responses" : {
+          "201" : {
+            "description" : "Created",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SectorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/routes" : {
+      "post" : {
+        "tags" : [ "routes" ],
+        "summary" : "Create a route in a sector, with an optional photo (coaches and admins)",
+        "operationId" : "createRoute",
+        "requestBody" : {
+          "content" : {
+            "multipart/form-data" : {
+              "schema" : {
+                "type" : "object",
+                "properties" : {
+                  "meta" : {
+                    "$ref" : "#/components/schemas/CreateRouteRequest"
+                  },
+                  "photo" : {
+                    "type" : "string",
+                    "format" : "binary"
+                  }
+                },
+                "required" : [ "meta" ]
+              }
+            }
+          }
+        },
+        "responses" : {
+          "404" : {
+            "description" : "Sector not found in the caller's organization",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RouteResponse"
+                }
+              }
+            }
+          },
+          "201" : {
+            "description" : "Created",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RouteResponse"
                 }
               }
             }
@@ -759,6 +906,57 @@
         }
       }
     },
+    "/api/sectors/{sectorId}" : {
+      "delete" : {
+        "tags" : [ "routes" ],
+        "summary" : "Delete an empty sector (admins)",
+        "operationId" : "deleteSector",
+        "parameters" : [ {
+          "name" : "sectorId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "404" : {
+            "description" : "Sector not found in the caller's organization"
+          },
+          "409" : {
+            "description" : "The sector still has routes"
+          },
+          "204" : {
+            "description" : "No Content"
+          }
+        }
+      }
+    },
+    "/api/routes/{routeId}" : {
+      "delete" : {
+        "tags" : [ "routes" ],
+        "summary" : "Delete a route (admins or its creator)",
+        "operationId" : "deleteRoute",
+        "parameters" : [ {
+          "name" : "routeId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "404" : {
+            "description" : "Route not found in the caller's organization"
+          },
+          "204" : {
+            "description" : "No Content"
+          }
+        }
+      }
+    },
     "/api/posts/{postId}" : {
       "delete" : {
         "tags" : [ "feed" ],
@@ -894,6 +1092,83 @@
           }
         }
       },
+      "HoldDto" : {
+        "type" : "object",
+        "description" : "Highlighted hold, in coordinates relative to the photo (0..1)",
+        "properties" : {
+          "x" : {
+            "type" : "number",
+            "format" : "double",
+            "maximum" : 1,
+            "minimum" : 0
+          },
+          "y" : {
+            "type" : "number",
+            "format" : "double",
+            "maximum" : 1,
+            "minimum" : 0
+          }
+        }
+      },
+      "UpdateHoldsRequest" : {
+        "type" : "object",
+        "properties" : {
+          "holds" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/HoldDto"
+            },
+            "maxItems" : 200,
+            "minItems" : 0
+          }
+        },
+        "required" : [ "holds" ]
+      },
+      "RouteResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "sectorId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "grade" : {
+            "type" : "string"
+          },
+          "climbType" : {
+            "type" : "string",
+            "enum" : [ "BOULDER", "ROPE" ]
+          },
+          "photoUrl" : {
+            "type" : "string",
+            "description" : "Short-lived signed URL of the route photo"
+          },
+          "holds" : {
+            "type" : "array",
+            "description" : "Highlighted holds, relative coordinates (0..1), overlay-rendered",
+            "items" : {
+              "$ref" : "#/components/schemas/HoldDto"
+            }
+          },
+          "createdById" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "createdByDisplayName" : {
+            "type" : "string"
+          },
+          "createdAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        }
+      },
       "CreateSlotRequest" : {
         "type" : "object",
         "properties" : {
@@ -960,6 +1235,63 @@
           }
         },
         "required" : [ "action", "date" ]
+      },
+      "CreateSectorRequest" : {
+        "type" : "object",
+        "properties" : {
+          "name" : {
+            "type" : "string",
+            "maxLength" : 120,
+            "minLength" : 0
+          }
+        },
+        "required" : [ "name" ]
+      },
+      "SectorResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "photoUrl" : {
+            "type" : "string",
+            "description" : "Short-lived signed URL of the wall photo"
+          },
+          "routes" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/RouteResponse"
+            }
+          }
+        }
+      },
+      "CreateRouteRequest" : {
+        "type" : "object",
+        "properties" : {
+          "sectorId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "name" : {
+            "type" : "string",
+            "maxLength" : 120,
+            "minLength" : 0
+          },
+          "grade" : {
+            "type" : "string",
+            "maxLength" : 10,
+            "minLength" : 0
+          },
+          "climbType" : {
+            "type" : "string",
+            "enum" : [ "BOULDER", "ROPE" ]
+          }
+        },
+        "required" : [ "climbType", "grade", "name", "sectorId" ]
       },
       "CreatePostRequest" : {
         "type" : "object",
