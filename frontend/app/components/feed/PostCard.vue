@@ -55,14 +55,20 @@ const createdAtLabel = computed(() =>
 
     <h3 class="font-semibold text-gray-900">{{ post.title }}</h3>
     <p v-if="post.body" class="text-sm whitespace-pre-line text-gray-700">{{ post.body }}</p>
-    <img
+    <!-- Fond neutre : les photos portrait comme paysage sont contenues entièrement et le
+         letterboxing est intentionnel (pas de bande blanche invisible sur la carte) -->
+    <div
       v-for="(imageUrl, index) in post.imageUrls"
       :key="imageUrl"
-      :src="imageUrl"
-      :alt="`${post.title} — image ${index + 1}`"
-      class="max-h-96 w-full rounded-md object-contain"
-      loading="lazy"
+      class="overflow-hidden rounded-md bg-gray-100"
     >
+      <img
+        :src="imageUrl"
+        :alt="`${post.title} — image ${index + 1}`"
+        class="mx-auto max-h-[70svh] w-full object-contain"
+        loading="lazy"
+      >
+    </div>
 
     <p class="text-xs text-gray-500">{{ post.authorDisplayName }} · {{ createdAtLabel }}</p>
   </article>
