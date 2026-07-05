@@ -98,12 +98,17 @@ async function mutate(action: () => Promise<unknown>, failureMessage = "L'opéra
   }
 }
 
-await useAsyncData('slots', async () => {
+// Réhydrate les refs depuis la payload (le handler ne se rejoue pas côté client après SSR)
+const { data: initial } = await useAsyncData('slots', async () => {
   if (auth.isActive) {
     await Promise.all([loadSlots(), loadMembers()])
   }
-  return true
+  return { slots: slots.value, clubMembers: clubMembers.value }
 })
+if (initial.value) {
+  slots.value = initial.value.slots
+  clubMembers.value = initial.value.clubMembers
+}
 
 useAutoRefresh(() => {
   if (auth.isActive) loadSlots()

@@ -64,10 +64,18 @@ async function refresh() {
   }
 }
 
-await useAsyncData('feed', async () => {
+// Réhydrate les refs depuis la payload : le handler ne se rejoue pas côté client après SSR,
+// sinon le fil serait vide au rechargement / à l'ouverture à froid de la PWA.
+const { data: initial } = await useAsyncData('feed', async () => {
   await refresh()
-  return true
+  return { posts: posts.value, page: page.value, hasNext: hasNext.value, pendingCount: pendingCount.value }
 })
+if (initial.value) {
+  posts.value = initial.value.posts
+  page.value = initial.value.page
+  hasNext.value = initial.value.hasNext
+  pendingCount.value = initial.value.pendingCount
+}
 
 useAutoRefresh(refresh)
 </script>
