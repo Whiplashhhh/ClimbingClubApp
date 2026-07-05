@@ -44,7 +44,8 @@
 
 ## Phase 5 — Séances & social
 - [x] Séances + ascensions (note, prise max, temps, assureur — assureur en nom libre, ami en 5B)
-- [ ] Amis, fil d'amis, confidentialité (5B) — confidentialité par séance déjà en place
+- [x] Amis, fil d'amis, confidentialité (5B) — graphe d'amis org-scopé, séances FRIENDS visibles
+      des amis acceptés, assureur choisi parmi les membres actifs
 
 ## Phase 6 — Sondages & messagerie
 - [ ] Polls (création / réponse / résultats, mêmes audiences)

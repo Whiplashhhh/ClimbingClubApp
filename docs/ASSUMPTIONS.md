@@ -39,3 +39,12 @@ Hypothèses prises faute d'information, avec le défaut le plus raisonnable. À 
   Tant que le graphe d'amis (Phase 5B) n'existe pas, FRIENDS équivaut à PRIVATE (visible du seul
   auteur). L'assureur est un **nom libre** en 5A ; la sélection d'un ami arrivera en 5B (la
   colonne `belayer_user_id` est déjà prête). L'ascension référence une voie du mur (Phase 4).
+- **A-013** (2026-07-05) : Graphe d'amis (Phase 5B) : amitié **symétrique** modélisée par une
+  seule ligne orientée (requester → addressee) passant de PENDING à ACCEPTED à l'acceptation par
+  le destinataire. Bornée à l'organisation : on ne peut se lier qu'à un **membre actif** du même
+  club (demande à un membre d'une autre org → 404, existence masquée). Une seule demande par
+  paire (les deux sens sont refusés une fois un lien existant → 409). `DELETE /api/friends/{id}`
+  couvre les trois cas (retirer un ami, annuler une demande envoyée, refuser une demande reçue).
+  Les séances FRIENDS deviennent visibles des amis acceptés ; l'assureur d'une ascension peut
+  être un membre actif (prime sur le nom libre) — pas nécessairement un ami, pour ne pas bloquer
+  la saisie d'une séance avec un partenaire qu'on vient de rencontrer.

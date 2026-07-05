@@ -1,6 +1,7 @@
 package app.belay.session;
 
 import app.belay.auth.UserPrincipal;
+import app.belay.common.ConflictException;
 import app.belay.common.NotFoundException;
 import app.belay.organization.OrganizationRepository;
 import app.belay.route.Route;
@@ -10,7 +11,9 @@ import app.belay.session.dto.CreateAscentRequest;
 import app.belay.session.dto.CreateSessionRequest;
 import app.belay.session.dto.SessionResponse;
 import app.belay.session.dto.UpdateSessionRequest;
+import app.belay.user.AppUser;
 import app.belay.user.UserRepository;
+import app.belay.user.UserStatus;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
@@ -74,6 +77,18 @@ public class SessionService {
         Route route = routeRepository
                 .findByIdAndOrganizationId(request.routeId(), principal.organizationId())
                 .orElseThrow(() -> new NotFoundException("Route not found"));
+        // Assureur : un membre actif du club prime sur le nom libre (tenancy vérifiée)
+        AppUser belayerUser = null;
+        String belayerName = request.belayerName();
+        if (request.belayerUserId() != null) {
+            belayerUser = userRepository
+                    .findByIdAndOrganizationId(request.belayerUserId(), principal.organizationId())
+                    .orElseThrow(() -> new NotFoundException("Belayer not found"));
+            if (belayerUser.getStatus() != UserStatus.ACTIVE) {
+                throw new ConflictException("Belayer is not an active member");
+            }
+            belayerName = null;
+        }
         ascentRepository.save(new Ascent(
                 organizationRepository.getReferenceById(principal.organizationId()),
                 session,
@@ -81,7 +96,8 @@ public class SessionService {
                 request.rating(),
                 request.topHold(),
                 request.durationSeconds(),
-                request.belayerName()));
+                belayerUser,
+                belayerName));
         return toResponse(session);
     }
 

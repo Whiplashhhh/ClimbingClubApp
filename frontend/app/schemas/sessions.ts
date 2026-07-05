@@ -33,6 +33,7 @@ export interface CreateAscentPayload {
   rating?: number
   topHold?: number
   durationSeconds?: number
+  belayerUserId?: string
   belayerName?: string
 }
 

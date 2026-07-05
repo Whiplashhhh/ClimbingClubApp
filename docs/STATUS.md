@@ -1,6 +1,6 @@
 # État d'avancement — Belay
 
-> Mis à jour : 2026-07-05 (Phase 5A : séances & ascensions ; correctif SSR au rechargement).
+> Mis à jour : 2026-07-05 (Phase 5B : amis, séances d'amis, assureur membre — Phase 5 complète).
 
 ## Fait (mergé dans `main`, CI verte)
 
@@ -75,16 +75,28 @@
   séances) étaient **vides au rechargement à froid** (le handler `useAsyncData` ne se rejoue pas
   côté client après SSR) — corrigé en réhydratant les refs depuis la payload.
 
+- **Phase 5B — Amis & confidentialité** (Phase 5 complète) : `Friendship` (V10) org-scopé,
+  demande → acceptation par le destinataire, un lien par paire, borné aux **membres actifs** du
+  club (A-013). `FriendService`/`FriendController` : envoyer/accepter/retirer, lister amis +
+  demandes entrantes. La **visibilité FRIENDS devient effective** — le fil d'activité inclut
+  désormais les séances FRIENDS des amis acceptés (`findClubActivity` étendue). L'**assureur
+  d'une ascension** peut être un membre actif (`belayerUserId`, prime sur le nom libre). UI :
+  page `/friends` (liste, demandes reçues accepter/refuser, envoi à un membre ajoutable),
+  sélecteur d'assureur membre dans la carte de séance, entrée de nav « Amis ». Tests intégration
+  (flux de demande, visibilité FRIENDS, assureur membre, self/doublon 409, anti-IDOR inter-org)
+  + vitest (candidats filtrés, envoi, acceptation, sélecteur d'assureur).
+
 ## En cours
 
-- Rien — la partie A de la Phase 5 est complète.
+- Rien — la Phase 5 (séances & social) est complète.
 
 ## Prochaines étapes (dans l'ordre de la ROADMAP)
 
-1. **Phase 5B — Amis & confidentialité** : graphe d'amis (demande/acceptation), séances des
-   amis (visibilité FRIENDS effective), sélection d'un ami comme assureur.
-2. **Phase 6 — Sondages & messagerie**, puis **Phase 7 — finitions PWA** (push web, éditeur
-   d'annotations de prises, itinéraire, rate limiting, RGPD, page profil).
+1. **Phase 6 — Sondages & messagerie** : polls (création / réponse / résultats, mêmes audiences
+   que le fil), messagerie privée élève ↔ moniteur.
+2. **Phase 7 — finitions PWA** : offline de base + push web, page profil (changement de mot de
+   passe), éditeur d'annotations de prises, itinéraire (deep-link maps), rate limiting (Redis)
+   sur les endpoints sensibles, export / suppression RGPD.
 
 ## Points d'attention
 

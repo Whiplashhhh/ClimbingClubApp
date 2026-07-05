@@ -20,5 +20,8 @@ public record CreateAscentRequest(
         @PositiveOrZero @Schema(description = "Duration in seconds (optional)")
         Integer durationSeconds,
 
-        @Size(max = 120) @Schema(description = "Free-text belayer name (a friend selector comes with the friend graph)")
+        @Schema(description = "Belayer chosen among the club's active members; takes precedence over belayerName")
+        UUID belayerUserId,
+
+        @Size(max = 120) @Schema(description = "Free-text belayer name (used when no member is selected)")
         String belayerName) {}

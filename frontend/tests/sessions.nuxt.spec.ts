@@ -66,6 +66,11 @@ describe('sessions page', () => {
           climbType: 'BOULDER', holds: [], createdById: me.id, createdByDisplayName: 'x',
           createdAt: '2026-07-05T00:00:00Z',
         })) }]
+      if (path === '/api/members')
+        return [
+          { id: me.id, displayName: 'Grimpeur', role: 'MEMBER' },
+          { id: '99999999-9999-4999-8999-999999999999', displayName: 'Autre', role: 'MEMBER' },
+        ]
       return {}
     })
   })
@@ -87,6 +92,21 @@ describe('sessions page', () => {
     expect(wrapper.text()).toContain('assuré par Marie')
     // Ma séance : contrôle d'ajout d'ascension présent
     expect(wrapper.find('[data-testid="add-ascent"]').exists()).toBe(true)
+  })
+
+  it('offers club members (except the climber) as belayers when adding an ascent', async () => {
+    const auth = useAuthStore()
+    auth.me = me
+    auth.initialized = true
+
+    wrapper = await mountSuspended(SessionsPage)
+    await wrapper.find('[data-testid="add-ascent"]').trigger('click')
+    const belayerSelect = wrapper.find('select[aria-label="Assureur (membre)"]')
+    expect(belayerSelect.exists()).toBe(true)
+    // L'auteur de la séance (Grimpeur) est exclu ; les autres membres sont proposés
+    const options = belayerSelect.findAll('option').map((o) => o.text())
+    expect(options).toContain('Autre')
+    expect(options).not.toContain('Grimpeur')
   })
 
   it('shows club activity read-only for others sessions', async () => {
