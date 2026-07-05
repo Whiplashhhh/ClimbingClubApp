@@ -1,6 +1,6 @@
 # État d'avancement — Belay
 
-> Mis à jour : 2026-07-05 (retours terrain n°5B : limite de débit du groupe général — retours n°5 complets).
+> Mis à jour : 2026-07-05 (Phase 7A : page profil + changement de mot de passe).
 
 ## Fait (mergé dans `main`, CI verte)
 
@@ -126,9 +126,15 @@
   Messages. Tests intégration (défaut illimité, 403 non-admin, 400 incohérent, 429 à la limite,
   retour illimité) + vitest.
 
+- **Phase 7A — Page profil** : `POST /api/auth/change-password` (vérifie l'actuel, impose 8–72
+  caractères, re-hash ; 400 si actuel faux ou nouveau trop court). Page `/profile` (infos du
+  compte + formulaire de changement de mot de passe avec confirmation), accessible depuis le menu
+  avatar (« Mon profil »). Tests intégration (401/204 login après changement) + vitest.
+
 ## En cours
 
-- Rien — la **Phase 6 est complète** ; **tous les retours terrain n°4 et n°5 sont traités**.
+- **Phase 7 en cours** : profil + mot de passe livrés (7A). Reste : push web, éditeur de prises,
+  itinéraire maps, rate limiting login, RGPD.
 
 ## Prochaines étapes (dans l'ordre de la ROADMAP)
 

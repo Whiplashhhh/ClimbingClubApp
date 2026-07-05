@@ -155,10 +155,18 @@ async function onLogout() {
                   </p>
                   <p class="truncate text-xs text-gray-500">{{ auth.me.email }}</p>
                 </div>
+                <NuxtLink
+                  to="/profile"
+                  role="menuitem"
+                  class="block px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50"
+                  @click="menuOpen = false"
+                >
+                  Mon profil
+                </NuxtLink>
                 <button
                   type="button"
                   role="menuitem"
-                  class="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50"
+                  class="w-full border-t border-gray-100 px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50"
                   @click="onLogout"
                 >
                   Se déconnecter
