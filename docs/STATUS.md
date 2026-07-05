@@ -1,6 +1,6 @@
 # État d'avancement — Belay
 
-> Mis à jour : 2026-07-05 (Phase 6A : sondages — création, vote, résultats).
+> Mis à jour : 2026-07-05 (Phase 6B : messagerie privée — Phase 6 complète).
 
 ## Fait (mergé dans `main`, CI verte)
 
@@ -95,15 +95,22 @@
   « Sondages ». Tests intégration (vote+revote+décomptes, visibilité COACH_STUDENTS via créneau,
   fermeture 409, option inconnue 404, matrice, anti-IDOR) + vitest.
 
+- **Phase 6B — Messagerie privée** (Phase 6 complète) : `Conversation` + `Message` (V12), fil 1:1
+  strictement moniteur ↔ l'un de ses élèves (relation dérivée d'un créneau, A-015), un seul fil
+  par paire. Non-lus par fil et global (`read_at` par message ; ouvrir un fil marque lu), chaque
+  envoi crée une notification in-app `NEW_MESSAGE`. API `GET/POST /api/conversations`,
+  `GET/POST /api/conversations/{id}/messages`. Page `/messages` (liste avec pastilles de non-lus,
+  vue fil avec bulles alignées et zone d'envoi, démarrage d'un fil ; le serveur valide
+  l'éligibilité → 409). Entrée de nav « Messages ». Tests intégration (échange + non-lus +
+  notification, garde-fous d'éligibilité, anti-IDOR inter-org) + vitest.
+
 ## En cours
 
-- Rien — la Phase 6A (sondages) est complète ; reste la messagerie privée (Phase 6B).
+- Rien — la **Phase 6 (sondages & messagerie) est complète**.
 
 ## Prochaines étapes (dans l'ordre de la ROADMAP)
 
-1. **Phase 6B — Messagerie privée** élève ↔ moniteur (fils de discussion, notifications de
-   nouveau message).
-2. **Phase 7 — finitions PWA** : offline de base + push web, page profil (changement de mot de
+1. **Phase 7 — finitions PWA** : offline de base + push web, page profil (changement de mot de
    passe), éditeur d'annotations de prises, itinéraire (deep-link maps), rate limiting (Redis)
    sur les endpoints sensibles, export / suppression RGPD.
 

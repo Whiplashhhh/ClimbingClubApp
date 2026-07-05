@@ -56,3 +56,13 @@ Hypothèses prises faute d'information, avec le défaut le plus raisonnable. À 
   vote est refusé (409) mais les résultats restent visibles. Résultats (décomptes + total)
   visibles de tous ceux qui voient le sondage — pas de vote anonyme séparé, cohérent avec un
   petit club. Suppression par l'auteur ou un admin (comme les posts).
+- **A-015** (2026-07-05) : Messagerie (Phase 6B) : **1:1 uniquement**, et strictement entre un
+  **moniteur et l'un de ses élèves** — la relation est dérivée d'un rattachement à un créneau
+  (même source que l'audience COACH_STUDENTS, A-005). Pas de MP entre deux simples membres ni
+  entre deux moniteurs sans lien de créneau (démarrer un tel fil → 409). **Un seul fil par
+  paire** (coach, élève) ; le démarrer à nouveau renvoie l'existant. Lecture par le destinataire
+  suivie via `read_at` par message (compteur de non-lus par fil + global) ; ouvrir un fil marque
+  ses messages reçus comme lus. Chaque envoi crée une **notification in-app** `NEW_MESSAGE` au
+  destinataire (pas encore de push web — Phase 7). Pas de pièces jointes en v1 (texte, 4000 car.).
+  L'éligibilité n'est pas exposée en liste : le front propose tous les membres et le serveur
+  tranche (409 si pas de relation), pour rester simple sans divulguer le graphe.

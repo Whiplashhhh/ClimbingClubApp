@@ -49,7 +49,7 @@
 
 ## Phase 6 — Sondages & messagerie
 - [x] Polls (création / réponse / résultats, mêmes audiences que le fil — choix unique, clôture optionnelle)
-- [ ] MP élève ↔ moniteur
+- [x] MP élève ↔ moniteur (fils privés, non-lus, notification in-app — relation dérivée d'un créneau)
 
 ## Phase 7 — Finitions PWA
 - [ ] Offline de base, notifications push web
