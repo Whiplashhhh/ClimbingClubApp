@@ -87,3 +87,10 @@ Hypothèses prises faute d'information, avec le défaut le plus raisonnable. À 
   général, configurable par les admins, arrive en tranche suivante (A-018). Les **groupes ne
   génèrent pas de notification** in-app par message (la pastille de non-lus suffit — éviter le
   spam) ; les 1:1 continuent de notifier (`NEW_MESSAGE`).
+- **A-018** (2026-07-05, retours terrain) : Limite de débit du **groupe général**, réglable par
+  les **admins** (président/admin). Deux réglages d'organisation : soit **illimité** (défaut),
+  soit **N messages par membre par fenêtre de T secondes** (les deux ensemble, sinon 400).
+  Au-delà, l'envoi dans le groupe général renvoie **429**. La limite s'applique **à tout le monde**
+  uniformément (y compris les encadrants) — l'admin choisit la valeur ; elle ne concerne que le
+  groupe général (les groupes de créneau et les 1:1 restent libres). Réglage exposé en lecture à
+  tout membre actif (`GET /api/messaging/settings`), modifiable par les admins (`PATCH`).

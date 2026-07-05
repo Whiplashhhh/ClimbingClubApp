@@ -197,6 +197,53 @@ class MessageIntegrationTest {
                 .isEqualTo(HttpStatus.NOT_FOUND);
     }
 
+    @Test
+    void generalGroupRateLimitIsAdminConfigurableAndEnforced() {
+        String generalId = findByType(member, "GENERAL").path("id").asText();
+
+        // Par défaut : illimité
+        assertThat(member.get("/api/messaging/settings", JsonNode.class)
+                        .getBody()
+                        .path("generalChatUnlimited")
+                        .asBoolean())
+                .isTrue();
+
+        // Un simple membre ne peut pas changer le réglage
+        assertThat(member.patch("/api/messaging/settings", Map.of("generalChatRateLimit", 2), JsonNode.class)
+                        .getStatusCode())
+                .isEqualTo(HttpStatus.FORBIDDEN);
+
+        // Réglage incohérent (limite sans fenêtre) → 400
+        assertThat(owner.patch("/api/messaging/settings", Map.of("generalChatRateLimit", 2), JsonNode.class)
+                        .getStatusCode())
+                .isEqualTo(HttpStatus.BAD_REQUEST);
+
+        // L'admin fixe 2 messages / heure
+        JsonNode set = owner.patch(
+                        "/api/messaging/settings",
+                        Map.of("generalChatRateLimit", 2, "generalChatWindowSeconds", 3600),
+                        JsonNode.class)
+                .getBody();
+        assertThat(set.path("generalChatUnlimited").asBoolean()).isFalse();
+        assertThat(set.path("generalChatRateLimit").asInt()).isEqualTo(2);
+
+        // Le membre peut poster deux messages, le troisième est refusé (429)
+        assertThat(sendGeneral(member, generalId, "un").getStatusCode()).isEqualTo(HttpStatus.CREATED);
+        assertThat(sendGeneral(member, generalId, "deux").getStatusCode()).isEqualTo(HttpStatus.CREATED);
+        assertThat(sendGeneral(member, generalId, "trois").getStatusCode()).isEqualTo(HttpStatus.TOO_MANY_REQUESTS);
+
+        // Retour à illimité → le membre peut de nouveau poster
+        owner.patch(
+                "/api/messaging/settings",
+                java.util.Collections.singletonMap("generalChatRateLimit", null),
+                JsonNode.class);
+        assertThat(sendGeneral(member, generalId, "encore").getStatusCode()).isEqualTo(HttpStatus.CREATED);
+    }
+
+    private org.springframework.http.ResponseEntity<JsonNode> sendGeneral(ApiActor actor, String id, String body) {
+        return actor.post("/api/conversations/" + id + "/messages", Map.of("body", body), JsonNode.class);
+    }
+
     private JsonNode conversations(ApiActor actor) {
         return actor.get("/api/conversations", JsonNode.class).getBody();
     }

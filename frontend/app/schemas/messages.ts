@@ -21,6 +21,13 @@ export const messageSchema = z.object({
   createdAt: z.string(),
 }) satisfies z.ZodType<components['schemas']['MessageResponse']>
 
+export const messagingSettingsSchema = z.object({
+  generalChatUnlimited: z.boolean(),
+  generalChatRateLimit: z.number().optional(),
+  generalChatWindowSeconds: z.number().optional(),
+}) satisfies z.ZodType<components['schemas']['MessagingSettingsResponse']>
+
 export type ConversationType = z.infer<typeof conversationTypeSchema>
 export type Conversation = z.infer<typeof conversationSchema>
 export type Message = z.infer<typeof messageSchema>
+export type MessagingSettings = z.infer<typeof messagingSettingsSchema>

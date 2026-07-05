@@ -71,6 +71,7 @@ describe('messages page', () => {
           { id: coachId, displayName: 'Coach', role: 'COACH' },
         ]
       if (path === `/api/conversations/${convId}/messages` && (!opts || opts.method !== 'POST')) return [message]
+      if (path === '/api/messaging/settings') return { generalChatUnlimited: true }
       return {}
     })
   })
@@ -125,5 +126,23 @@ describe('messages page', () => {
       method: 'POST',
       body: { userId: coachId },
     })
+  })
+
+  it('lets an admin configure the general-group rate limit', async () => {
+    const auth = useAuthStore()
+    auth.me = { ...me, role: 'OWNER' }
+    auth.initialized = true
+
+    wrapper = await mountSuspended(MessagesPage)
+    await nextTick()
+    const form = wrapper.find('[data-testid="general-limit-settings"]')
+    expect(form.exists()).toBe(true)
+
+    await form.find('input[type="checkbox"]').setValue(true)
+    await form.trigger('submit')
+    expect(apiFetchMock).toHaveBeenCalledWith(
+      '/api/messaging/settings',
+      expect.objectContaining({ method: 'PATCH' }),
+    )
   })
 })

@@ -21,6 +21,11 @@ public class RestExceptionHandler {
         return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, e.getMessage());
     }
 
+    @ExceptionHandler(TooManyRequestsException.class)
+    ProblemDetail handleTooManyRequests(TooManyRequestsException e) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.TOO_MANY_REQUESTS, e.getMessage());
+    }
+
     @ExceptionHandler(BadCredentialsException.class)
     ProblemDetail handleBadCredentials(BadCredentialsException e) {
         // Message générique : ne pas distinguer email inconnu / mot de passe erroné

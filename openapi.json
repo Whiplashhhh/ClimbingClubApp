@@ -36,6 +36,9 @@
     "name" : "messaging",
     "description" : "Private coach↔student conversations (tenant-scoped)"
   }, {
+    "name" : "messaging",
+    "description" : "Club messaging settings (general-group rate limit)"
+  }, {
     "name" : "members",
     "description" : "Organization members management (tenant-scoped)"
   }, {
@@ -1094,6 +1097,62 @@
         }
       }
     },
+    "/api/messaging/settings" : {
+      "get" : {
+        "tags" : [ "messaging" ],
+        "summary" : "The club's messaging settings (general-group rate limit)",
+        "operationId" : "get",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/MessagingSettingsResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch" : {
+        "tags" : [ "messaging" ],
+        "summary" : "Set the general-group rate limit (admins): unlimited or N messages per window",
+        "operationId" : "update_1",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/UpdateMessagingSettingsRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "400" : {
+            "description" : "Provide both a limit and a window, or neither",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/MessagingSettingsResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Only admins may change messaging settings",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/MessagingSettingsResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/members/{memberId}/role" : {
       "patch" : {
         "tags" : [ "members" ],
@@ -1262,7 +1321,7 @@
       "get" : {
         "tags" : [ "media" ],
         "summary" : "Stream a stored image (only keys belonging to the caller's organization)",
-        "operationId" : "get",
+        "operationId" : "get_1",
         "parameters" : [ {
           "name" : "objectKey",
           "in" : "path",
@@ -2488,6 +2547,37 @@
           }
         },
         "required" : [ "visibility" ]
+      },
+      "UpdateMessagingSettingsRequest" : {
+        "type" : "object",
+        "properties" : {
+          "generalChatRateLimit" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "Max messages per member per window; null = unlimited"
+          },
+          "generalChatWindowSeconds" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "Window length in seconds; null = unlimited"
+          }
+        }
+      },
+      "MessagingSettingsResponse" : {
+        "type" : "object",
+        "properties" : {
+          "generalChatUnlimited" : {
+            "type" : "boolean"
+          },
+          "generalChatRateLimit" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "generalChatWindowSeconds" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        }
       },
       "UpdateRoleRequest" : {
         "type" : "object",

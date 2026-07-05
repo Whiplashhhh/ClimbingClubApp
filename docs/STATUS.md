@@ -1,6 +1,6 @@
 # État d'avancement — Belay
 
-> Mis à jour : 2026-07-05 (retours terrain n°5A : messagerie de groupe — créneau + club).
+> Mis à jour : 2026-07-05 (retours terrain n°5B : limite de débit du groupe général — retours n°5 complets).
 
 ## Fait (mergé dans `main`, CI verte)
 
@@ -119,18 +119,19 @@
   groupe (A-017). Page Messages adaptée (pastille Groupe/Club, nom de l'expéditeur dans les fils
   de groupe). Tests intégration (1:1 + général + créneau + anti-IDOR) + vitest.
 
+- **Retours terrain n°5B — limite de débit du groupe général** : réglage d'organisation posé par
+  un admin (V14) — soit illimité, soit **N messages par membre par fenêtre de T secondes** ;
+  au-delà, l'envoi dans le groupe général renvoie **429** (A-018). `GET/PATCH
+  /api/messaging/settings` (lecture pour tous, écriture admins), panneau d'admin dans la page
+  Messages. Tests intégration (défaut illimité, 403 non-admin, 400 incohérent, 429 à la limite,
+  retour illimité) + vitest.
+
 ## En cours
 
-- Rien — la **Phase 6 est complète** ; retours n°4 et n°5A traités.
-- **Reste de retours n°5 (5B)** : limite de débit du **groupe général** configurable par les
-  admins (illimité, ou N messages par fenêtre de temps définie). Modèle décidé (A-018 à écrire),
-  pas encore construit.
+- Rien — la **Phase 6 est complète** ; **tous les retours terrain n°4 et n°5 sont traités**.
 
 ## Prochaines étapes (dans l'ordre de la ROADMAP)
 
-0. **Retours n°5B — limite de débit du groupe général** : réglage d'organisation posé par un
-   admin — soit écriture illimitée, soit **N messages par membre par fenêtre T** (les deux
-   configurables) ; refus (429/409) au-delà. UI d'administration + application côté envoi.
 1. **Phase 7 — finitions PWA** : offline de base + push web, page profil (changement de mot de
    passe), éditeur d'annotations de prises, itinéraire (deep-link maps), rate limiting (Redis)
    sur les endpoints sensibles, export / suppression RGPD.

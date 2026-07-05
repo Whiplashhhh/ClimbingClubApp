@@ -3,10 +3,14 @@ package app.belay.message;
 import app.belay.auth.UserPrincipal;
 import app.belay.common.ConflictException;
 import app.belay.common.NotFoundException;
+import app.belay.common.TooManyRequestsException;
 import app.belay.message.dto.ConversationResponse;
 import app.belay.message.dto.MessageResponse;
+import app.belay.message.dto.MessagingSettingsResponse;
+import app.belay.message.dto.UpdateMessagingSettingsRequest;
 import app.belay.notification.NotificationService;
 import app.belay.notification.NotificationType;
+import app.belay.organization.Organization;
 import app.belay.organization.OrganizationRepository;
 import app.belay.slot.SlotRepository;
 import app.belay.user.AppUser;
@@ -130,9 +134,28 @@ public class MessageService {
                 .toList();
     }
 
+    @Transactional(readOnly = true)
+    public MessagingSettingsResponse getSettings(UserPrincipal principal) {
+        return MessagingSettingsResponse.from(loadOrg(principal.organizationId()));
+    }
+
+    /** Réglage réservé aux admins : limite (ou non) l'écriture du groupe général. */
+    @Transactional
+    public MessagingSettingsResponse updateSettings(UserPrincipal principal, UpdateMessagingSettingsRequest request) {
+        boolean bothNull = request.generalChatRateLimit() == null && request.generalChatWindowSeconds() == null;
+        boolean bothSet = request.generalChatRateLimit() != null && request.generalChatWindowSeconds() != null;
+        if (!bothNull && !bothSet) {
+            throw new IllegalArgumentException("Provide both a message limit and a window, or neither (unlimited)");
+        }
+        Organization org = loadOrg(principal.organizationId());
+        org.setGeneralChatLimit(request.generalChatRateLimit(), request.generalChatWindowSeconds());
+        return MessagingSettingsResponse.from(org);
+    }
+
     @Transactional
     public MessageResponse send(UserPrincipal principal, UUID conversationId, String body) {
         Conversation conversation = requireAccess(principal, conversationId);
+        enforceGeneralRateLimit(conversation, principal.id());
         Message message = messageRepository.save(new Message(
                 conversation.getOrganization(), conversation, userRepository.getReferenceById(principal.id()), body));
         conversation.touch(Instant.now());
@@ -168,6 +191,29 @@ public class MessageService {
             throw new NotFoundException("Conversation not found"); // existence masquée
         }
         return c;
+    }
+
+    /** Applique la limite de débit du groupe général (si l'admin en a défini une). */
+    private void enforceGeneralRateLimit(Conversation conversation, UUID userId) {
+        if (conversation.getType() != ConversationType.GENERAL) {
+            return;
+        }
+        Organization org = conversation.getOrganization();
+        Integer limit = org.getGeneralChatRateLimit();
+        if (limit == null) {
+            return; // illimité
+        }
+        Instant since = Instant.now().minusSeconds(org.getGeneralChatWindowSeconds());
+        long recent = messageRepository.countBySenderSince(conversation.getId(), userId, since);
+        if (recent >= limit) {
+            throw new TooManyRequestsException("Message rate limit reached for the club group; try again later");
+        }
+    }
+
+    private Organization loadOrg(UUID orgId) {
+        return organizationRepository
+                .findById(orgId)
+                .orElseThrow(() -> new NotFoundException("Organization not found"));
     }
 
     private Conversation ensureGeneral(UUID orgId) {
