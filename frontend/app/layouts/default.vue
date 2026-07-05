@@ -157,6 +157,13 @@ async function onLogout() {
             Amis
           </NuxtLink>
           <NuxtLink
+            to="/messages"
+            class="text-gray-600 hover:text-indigo-600"
+            exact-active-class="font-semibold text-indigo-600"
+          >
+            Messages
+          </NuxtLink>
+          <NuxtLink
             to="/members"
             class="text-gray-600 hover:text-indigo-600"
             exact-active-class="font-semibold text-indigo-600"
