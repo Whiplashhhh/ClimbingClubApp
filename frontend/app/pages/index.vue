@@ -2,6 +2,7 @@
 import { z } from 'zod'
 import { pendingMemberSchema } from '~/schemas/auth'
 import { feedPageSchema, type FeedPost } from '~/schemas/feed'
+import { pollSchema, type Poll } from '~/schemas/polls'
 
 useHead({ title: 'Fil — Belay' })
 
@@ -9,12 +10,25 @@ const PAGE_SIZE = 20
 
 const auth = useAuthStore()
 
-const canPublish = computed(() => auth.isAdmin || auth.me?.role === 'COACH')
+const canPublish = computed(() => auth.isStaff)
+// Composeur : publier une info (texte + images) OU un sondage
+const composerMode = ref<'info' | 'poll'>('info')
 
 const posts = ref<FeedPost[]>([])
+const polls = ref<Poll[]>([])
 const page = ref(0)
 const hasNext = ref(false)
 const loadError = ref<string | null>(null)
+
+// Fil unifié : posts et sondages entrelacés, plus récents d'abord
+type FeedItem = { kind: 'post'; post: FeedPost; at: string } | { kind: 'poll'; poll: Poll; at: string }
+const timeline = computed<FeedItem[]>(() => {
+  const items: FeedItem[] = [
+    ...posts.value.map((post) => ({ kind: 'post' as const, post, at: post.createdAt })),
+    ...polls.value.map((poll) => ({ kind: 'poll' as const, poll, at: poll.createdAt })),
+  ]
+  return items.sort((a, b) => (a.at < b.at ? 1 : a.at > b.at ? -1 : 0))
+})
 
 async function loadPage(target: number) {
   loadError.value = null
@@ -30,6 +44,10 @@ async function loadPage(target: number) {
   }
 }
 
+async function loadPolls() {
+  polls.value = z.array(pollSchema).parse(await apiFetch<unknown>('/api/polls'))
+}
+
 async function removePost(id: string) {
   try {
     await apiFetch(`/api/posts/${id}`, { method: 'DELETE' })
@@ -39,8 +57,32 @@ async function removePost(id: string) {
   }
 }
 
-function canDelete(post: FeedPost): boolean {
+function canDeletePost(post: FeedPost): boolean {
   return auth.isAdmin || post.authorId === auth.me?.id
+}
+function canDeletePoll(poll: Poll): boolean {
+  return auth.isAdmin || poll.authorId === auth.me?.id
+}
+
+async function votePoll(pollId: string, optionId: string) {
+  loadError.value = null
+  try {
+    const updated = pollSchema.parse(
+      await apiFetch<unknown>(`/api/polls/${pollId}/vote`, { method: 'POST', body: { optionId } }),
+    )
+    polls.value = polls.value.map((p) => (p.id === updated.id ? updated : p))
+  } catch {
+    loadError.value = 'Le vote a échoué (sondage clôturé ?).'
+    await loadPolls()
+  }
+}
+async function removePoll(pollId: string) {
+  try {
+    await apiFetch(`/api/polls/${pollId}`, { method: 'DELETE' })
+    polls.value = polls.value.filter((p) => p.id !== pollId)
+  } catch {
+    loadError.value = 'La suppression a échoué.'
+  }
 }
 
 // Rappel non bloquant pour les admins : demandes d'adhésion à traiter sur /members
@@ -60,7 +102,7 @@ async function refreshPendingCount() {
 
 async function refresh() {
   if (auth.isActive) {
-    await Promise.all([loadPage(0), refreshPendingCount()])
+    await Promise.all([loadPage(0), loadPolls(), refreshPendingCount()])
   }
 }
 
@@ -68,10 +110,17 @@ async function refresh() {
 // sinon le fil serait vide au rechargement / à l'ouverture à froid de la PWA.
 const { data: initial } = await useAsyncData('feed', async () => {
   await refresh()
-  return { posts: posts.value, page: page.value, hasNext: hasNext.value, pendingCount: pendingCount.value }
+  return {
+    posts: posts.value,
+    polls: polls.value,
+    page: page.value,
+    hasNext: hasNext.value,
+    pendingCount: pendingCount.value,
+  }
 })
 if (initial.value) {
   posts.value = initial.value.posts
+  polls.value = initial.value.polls
   page.value = initial.value.page
   hasNext.value = initial.value.hasNext
   pendingCount.value = initial.value.pendingCount
@@ -134,21 +183,51 @@ useAutoRefresh(refresh)
         gérer dans « Membres »
       </NuxtLink>
 
-      <FeedPostComposer v-if="canPublish" @published="loadPage(0)" />
+      <!-- Composeur : bascule Info / Sondage (encadrants uniquement) -->
+      <div v-if="canPublish" class="flex flex-col gap-3">
+        <div class="flex gap-2" data-testid="composer-toggle">
+          <button
+            type="button"
+            class="rounded-md border px-3 py-1.5 text-sm"
+            :class="composerMode === 'info' ? 'border-indigo-600 bg-indigo-50 font-semibold text-indigo-700' : 'border-gray-300 text-gray-600'"
+            @click="composerMode = 'info'"
+          >
+            Info
+          </button>
+          <button
+            type="button"
+            class="rounded-md border px-3 py-1.5 text-sm"
+            :class="composerMode === 'poll' ? 'border-indigo-600 bg-indigo-50 font-semibold text-indigo-700' : 'border-gray-300 text-gray-600'"
+            @click="composerMode = 'poll'"
+          >
+            Sondage
+          </button>
+        </div>
+        <FeedPostComposer v-if="composerMode === 'info'" @published="loadPage(0)" />
+        <PollsPollComposer v-else @created="loadPolls" />
+      </div>
 
       <p v-if="loadError" class="text-sm text-red-600">{{ loadError }}</p>
 
       <section class="flex flex-col gap-3" data-testid="feed">
-        <p v-if="posts.length === 0 && !loadError" class="text-sm text-gray-500">
+        <p v-if="timeline.length === 0 && !loadError" class="text-sm text-gray-500">
           Aucune publication pour le moment.
         </p>
-        <FeedPostCard
-          v-for="post in posts"
-          :key="post.id"
-          :post="post"
-          :can-delete="canDelete(post)"
-          @delete="removePost"
-        />
+        <template v-for="item in timeline" :key="item.kind + (item.kind === 'post' ? item.post.id : item.poll.id)">
+          <FeedPostCard
+            v-if="item.kind === 'post'"
+            :post="item.post"
+            :can-delete="canDeletePost(item.post)"
+            @delete="removePost"
+          />
+          <PollsPollCard
+            v-else
+            :poll="item.poll"
+            :can-delete="canDeletePoll(item.poll)"
+            @vote="votePoll"
+            @delete-poll="removePoll"
+          />
+        </template>
       </section>
 
       <button

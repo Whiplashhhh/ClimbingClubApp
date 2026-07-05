@@ -66,3 +66,12 @@ Hypothèses prises faute d'information, avec le défaut le plus raisonnable. À 
   destinataire (pas encore de push web — Phase 7). Pas de pièces jointes en v1 (texte, 4000 car.).
   L'éligibilité n'est pas exposée en liste : le front propose tous les membres et le serveur
   tranche (409 si pas de relation), pour rester simple sans divulguer le graphe.
+- **A-016** (2026-07-05, retours terrain) : Réorganisation de la navigation. La barre débordait
+  sur mobile ; on la resserre. **« Sondages » n'est plus un onglet** : la création d'un sondage
+  devient une **bascule Info | Sondage dans le composeur du fil**, et les sondages s'affichent
+  **dans le fil**, entrelacés avec les posts par date (le back reste inchangé : le fil merge
+  posts + `/api/polls` côté front). **« Amis » et « Messages » passent en icônes** dans l'en-tête
+  à côté de la cloche (Messages porte une pastille de non-lus). **« Membres » n'est visible que
+  des encadrants** (président/admin/moniteurs) — l'API était déjà protégée, on masque juste
+  l'onglet. La navigation texte se limite donc à : Fil, Créneaux, Voies, Séances (+ Membres pour
+  les encadrants), en `flex-wrap` pour ne jamais déborder.

@@ -3,7 +3,14 @@ import { onClickOutside } from '@vueuse/core'
 
 const auth = useAuthStore()
 const notificationsStore = useNotificationsStore()
+const messagesStore = useMessagesStore()
 const route = useRoute()
+
+function refreshBadges() {
+  if (!auth.isActive) return
+  notificationsStore.refreshUnreadCount()
+  messagesStore.refreshUnreadCount()
+}
 
 // Menu du compte (avatar en haut à droite) — accueillera le profil plus tard
 const menuOpen = ref(false)
@@ -25,13 +32,11 @@ watch(
   () => [auth.isActive, route.path],
   () => {
     menuOpen.value = false
-    if (auth.isActive) notificationsStore.refreshUnreadCount()
+    refreshBadges()
   },
   { immediate: true },
 )
-useAutoRefresh(() => {
-  if (auth.isActive) notificationsStore.refreshUnreadCount()
-})
+useAutoRefresh(refreshBadges)
 
 async function onLogout() {
   menuOpen.value = false
@@ -76,6 +81,56 @@ async function onLogout() {
                 {{ notificationsStore.unreadCount > 9 ? '9+' : notificationsStore.unreadCount }}
               </span>
             </NuxtLink>
+            <NuxtLink
+              v-if="auth.isActive"
+              to="/friends"
+              class="shrink-0 text-gray-500 hover:text-indigo-600"
+              aria-label="Amis"
+              data-testid="friends-icon"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                class="h-5 w-5"
+              >
+                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                <circle cx="9" cy="7" r="4" />
+                <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+                <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+              </svg>
+            </NuxtLink>
+            <NuxtLink
+              v-if="auth.isActive"
+              to="/messages"
+              class="relative shrink-0 text-gray-500 hover:text-indigo-600"
+              aria-label="Messages"
+              data-testid="messages-icon"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                class="h-5 w-5"
+              >
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+              </svg>
+              <span
+                v-if="messagesStore.unreadCount > 0"
+                class="absolute -top-1.5 -right-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-semibold text-white"
+                data-testid="messages-badge"
+              >
+                {{ messagesStore.unreadCount > 9 ? '9+' : messagesStore.unreadCount }}
+              </span>
+            </NuxtLink>
             <div ref="menuRoot" class="relative shrink-0">
               <button
                 type="button"
@@ -112,8 +167,8 @@ async function onLogout() {
             </div>
           </div>
         </div>
-        <!-- Rangée 2 : navigation, sur sa propre ligne pour rester lisible sur téléphone -->
-        <nav v-if="auth.isActive" class="mt-2 flex gap-5 text-sm">
+        <!-- Rangée 2 : navigation principale. flex-wrap : ne déborde jamais sur petit écran. -->
+        <nav v-if="auth.isActive" class="mt-2 flex flex-wrap gap-x-5 gap-y-1 text-sm">
           <NuxtLink
             to="/"
             class="text-gray-600 hover:text-indigo-600"
@@ -129,13 +184,6 @@ async function onLogout() {
             Créneaux
           </NuxtLink>
           <NuxtLink
-            to="/polls"
-            class="text-gray-600 hover:text-indigo-600"
-            exact-active-class="font-semibold text-indigo-600"
-          >
-            Sondages
-          </NuxtLink>
-          <NuxtLink
             to="/routes"
             class="text-gray-600 hover:text-indigo-600"
             exact-active-class="font-semibold text-indigo-600"
@@ -149,21 +197,9 @@ async function onLogout() {
           >
             Séances
           </NuxtLink>
+          <!-- Membres : réservé aux encadrants (président/admin/moniteurs) -->
           <NuxtLink
-            to="/friends"
-            class="text-gray-600 hover:text-indigo-600"
-            exact-active-class="font-semibold text-indigo-600"
-          >
-            Amis
-          </NuxtLink>
-          <NuxtLink
-            to="/messages"
-            class="text-gray-600 hover:text-indigo-600"
-            exact-active-class="font-semibold text-indigo-600"
-          >
-            Messages
-          </NuxtLink>
-          <NuxtLink
+            v-if="auth.isStaff"
             to="/members"
             class="text-gray-600 hover:text-indigo-600"
             exact-active-class="font-semibold text-indigo-600"

@@ -67,4 +67,29 @@ describe('default layout', () => {
     await nextTick()
     expect(wrapper.find('[data-testid="bell-badge"]').text()).toBe('2')
   })
+
+  it('exposes Amis and Messages as header icons', async () => {
+    const auth = useAuthStore()
+    auth.me = me
+    auth.initialized = true
+
+    wrapper = await mountSuspended(DefaultLayout, { slots: { default: () => 'contenu' } })
+    expect(wrapper.find('[data-testid="friends-icon"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="messages-icon"]').exists()).toBe(true)
+  })
+
+  it('shows the Membres nav link only to staff', async () => {
+    const auth = useAuthStore()
+    auth.me = me // OWNER = encadrant
+    auth.initialized = true
+    wrapper = await mountSuspended(DefaultLayout, { slots: { default: () => 'contenu' } })
+    expect(wrapper.findAll('nav a').some((a) => a.text() === 'Membres')).toBe(true)
+    wrapper.unmount()
+
+    auth.me = { ...me, role: 'MEMBER' }
+    wrapper = await mountSuspended(DefaultLayout, { slots: { default: () => 'contenu' } })
+    expect(wrapper.findAll('nav a').some((a) => a.text() === 'Membres')).toBe(false)
+    // Sondages n'est plus un onglet de navigation
+    expect(wrapper.findAll('nav a').some((a) => a.text() === 'Sondages')).toBe(false)
+  })
 })
