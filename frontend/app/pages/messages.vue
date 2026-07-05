@@ -1,11 +1,47 @@
 <script setup lang="ts">
 import { z } from 'zod'
-import { conversationSchema, messageSchema, type Conversation, type Message } from '~/schemas/messages'
+import {
+  conversationSchema,
+  messageSchema,
+  messagingSettingsSchema,
+  type Conversation,
+  type Message,
+} from '~/schemas/messages'
 import { memberSchema, type Member } from '~/schemas/auth'
 
 useHead({ title: 'Messages — Belay' })
 
 const auth = useAuthStore()
+
+// Réglage admin : limite d'écriture du groupe général
+const settingsLimited = ref(false)
+const settingsLimit = ref('10')
+const settingsWindowMin = ref('60')
+const settingsSaved = ref(false)
+
+async function loadSettings() {
+  if (!auth.isAdmin) return
+  const s = messagingSettingsSchema.parse(await apiFetch<unknown>('/api/messaging/settings'))
+  settingsLimited.value = !s.generalChatUnlimited
+  if (s.generalChatRateLimit) settingsLimit.value = String(s.generalChatRateLimit)
+  if (s.generalChatWindowSeconds) settingsWindowMin.value = String(Math.round(s.generalChatWindowSeconds / 60))
+}
+
+async function saveSettings() {
+  settingsSaved.value = false
+  const body = settingsLimited.value
+    ? {
+        generalChatRateLimit: Math.max(1, Number(settingsLimit.value) || 1),
+        generalChatWindowSeconds: Math.max(60, (Number(settingsWindowMin.value) || 1) * 60),
+      }
+    : { generalChatRateLimit: null, generalChatWindowSeconds: null }
+  try {
+    await apiFetch('/api/messaging/settings', { method: 'PATCH', body })
+    settingsSaved.value = true
+  } catch {
+    error.value = "L'enregistrement du réglage a échoué."
+  }
+}
 
 const conversations = ref<Conversation[]>([])
 const members = ref<Member[]>([])
@@ -100,6 +136,11 @@ if (initial.value) {
   members.value = initial.value.members
 }
 
+// Réglage admin chargé côté client (formulaire local, hors flux SSR)
+onMounted(() => {
+  loadSettings().catch(() => {})
+})
+
 useAutoRefresh(async () => {
   if (!auth.isActive) return
   await loadConversations()
@@ -126,6 +167,46 @@ function timeLabel(iso: string): string {
 
       <!-- Vue liste : conversations + démarrage d'un nouveau fil -->
       <template v-if="!selected">
+        <!-- Réglage admin : limite d'écriture du groupe général -->
+        <form
+          v-if="auth.isAdmin"
+          class="flex flex-col gap-2 rounded-lg border border-gray-200 bg-white p-4"
+          data-testid="general-limit-settings"
+          @submit.prevent="saveSettings"
+        >
+          <label class="flex items-center gap-2 text-sm text-gray-700">
+            <input v-model="settingsLimited" type="checkbox">
+            Limiter l'écriture du groupe « Tout le club »
+          </label>
+          <div v-if="settingsLimited" class="flex flex-wrap items-center gap-2 text-sm text-gray-600">
+            <input
+              v-model="settingsLimit"
+              type="number"
+              min="1"
+              class="w-16 rounded-md border border-gray-300 px-2 py-1 text-gray-700"
+              aria-label="Nombre de messages"
+            >
+            messages par
+            <input
+              v-model="settingsWindowMin"
+              type="number"
+              min="1"
+              class="w-16 rounded-md border border-gray-300 px-2 py-1 text-gray-700"
+              aria-label="Fenêtre en minutes"
+            >
+            minutes / membre
+          </div>
+          <div class="flex items-center gap-3">
+            <button
+              type="submit"
+              class="self-start rounded-md bg-indigo-600 px-3 py-1.5 text-sm text-white hover:bg-indigo-700"
+            >
+              Enregistrer
+            </button>
+            <span v-if="settingsSaved" class="text-xs text-green-600">Enregistré ✓</span>
+          </div>
+        </form>
+
         <form
           class="flex gap-2 rounded-lg border border-gray-200 bg-white p-4"
           data-testid="new-conversation"

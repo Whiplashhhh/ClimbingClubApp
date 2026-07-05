@@ -371,6 +371,24 @@ export interface paths {
         patch: operations["update"];
         trace?: never;
     };
+    "/api/messaging/settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The club's messaging settings (general-group rate limit) */
+        get: operations["get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Set the general-group rate limit (admins): unlimited or N messages per window */
+        patch: operations["update_1"];
+        trace?: never;
+    };
     "/api/members/{memberId}/role": {
         parameters: {
             query?: never;
@@ -481,7 +499,7 @@ export interface paths {
             cookie?: never;
         };
         /** Stream a stored image (only keys belonging to the caller's organization) */
-        get: operations["get"];
+        get: operations["get_1"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1073,6 +1091,25 @@ export interface components {
             note?: string;
             /** @enum {string} */
             visibility: "CLUB" | "FRIENDS" | "PRIVATE";
+        };
+        UpdateMessagingSettingsRequest: {
+            /**
+             * Format: int32
+             * @description Max messages per member per window; null = unlimited
+             */
+            generalChatRateLimit?: number;
+            /**
+             * Format: int32
+             * @description Window length in seconds; null = unlimited
+             */
+            generalChatWindowSeconds?: number;
+        };
+        MessagingSettingsResponse: {
+            generalChatUnlimited?: boolean;
+            /** Format: int32 */
+            generalChatRateLimit?: number;
+            /** Format: int32 */
+            generalChatWindowSeconds?: number;
         };
         UpdateRoleRequest: {
             /** @enum {string} */
@@ -2018,6 +2055,59 @@ export interface operations {
             };
         };
     };
+    get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["MessagingSettingsResponse"];
+                };
+            };
+        };
+    };
+    update_1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateMessagingSettingsRequest"];
+            };
+        };
+        responses: {
+            /** @description Provide both a limit and a window, or neither */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["MessagingSettingsResponse"];
+                };
+            };
+            /** @description Only admins may change messaging settings */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["MessagingSettingsResponse"];
+                };
+            };
+        };
+    };
     changeRole: {
         parameters: {
             query?: never;
@@ -2147,7 +2237,7 @@ export interface operations {
             };
         };
     };
-    get: {
+    get_1: {
         parameters: {
             query?: never;
             header?: never;

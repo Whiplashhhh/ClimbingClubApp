@@ -43,6 +43,18 @@ public interface MessageRepository extends JpaRepository<Message, UUID> {
             """)
     List<Message> findLatestPerConversation(@Param("conversationIds") List<UUID> conversationIds);
 
+    /** Messages postés par un membre dans un fil depuis un instant (limite de débit). */
+    @Query("""
+            select count(m.id) from Message m
+            where m.conversation.id = :conversationId
+              and m.sender.id = :userId
+              and m.createdAt >= :since
+            """)
+    long countBySenderSince(
+            @Param("conversationId") UUID conversationId,
+            @Param("userId") UUID userId,
+            @Param("since") java.time.Instant since);
+
     interface UnreadCount {
         UUID getConversationId();
 

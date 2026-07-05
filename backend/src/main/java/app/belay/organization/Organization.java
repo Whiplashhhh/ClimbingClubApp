@@ -41,6 +41,13 @@ public class Organization {
     @Column(name = "logo_object_key", length = 255)
     private String logoObjectKey;
 
+    // Limite d'écriture du groupe général : NULL = illimité ; sinon N messages / fenêtre (s).
+    @Column(name = "general_chat_rate_limit")
+    private Integer generalChatRateLimit;
+
+    @Column(name = "general_chat_window_seconds")
+    private Integer generalChatWindowSeconds;
+
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
@@ -96,5 +103,19 @@ public class Organization {
 
     public String getLogoObjectKey() {
         return logoObjectKey;
+    }
+
+    public Integer getGeneralChatRateLimit() {
+        return generalChatRateLimit;
+    }
+
+    public Integer getGeneralChatWindowSeconds() {
+        return generalChatWindowSeconds;
+    }
+
+    /** Définit la limite du groupe général ({@code null, null} = illimité). */
+    public void setGeneralChatLimit(Integer rateLimit, Integer windowSeconds) {
+        this.generalChatRateLimit = rateLimit;
+        this.generalChatWindowSeconds = windowSeconds;
     }
 }
