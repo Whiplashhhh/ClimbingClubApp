@@ -33,6 +33,9 @@
     "name" : "auth",
     "description" : "Registration, login and session management"
   }, {
+    "name" : "messaging",
+    "description" : "Private coach↔student conversations (tenant-scoped)"
+  }, {
     "name" : "members",
     "description" : "Organization members management (tenant-scoped)"
   }, {
@@ -793,6 +796,152 @@
           },
           "201" : {
             "description" : "Created"
+          }
+        }
+      }
+    },
+    "/api/conversations" : {
+      "get" : {
+        "tags" : [ "messaging" ],
+        "summary" : "The caller's conversations, most recently active first",
+        "operationId" : "conversations",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/ConversationResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post" : {
+        "tags" : [ "messaging" ],
+        "summary" : "Start (or fetch) a conversation with an eligible member — a coach or one of their students",
+        "operationId" : "start_1",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/StartConversationRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "404" : {
+            "description" : "Member not found in the caller's organization",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ConversationResponse"
+                }
+              }
+            }
+          },
+          "409" : {
+            "description" : "Self-conversation or no coaching relationship",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ConversationResponse"
+                }
+              }
+            }
+          },
+          "201" : {
+            "description" : "Created",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ConversationResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/conversations/{conversationId}/messages" : {
+      "get" : {
+        "tags" : [ "messaging" ],
+        "summary" : "Messages of a conversation the caller belongs to (marks received messages as read)",
+        "operationId" : "messages",
+        "parameters" : [ {
+          "name" : "conversationId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "404" : {
+            "description" : "Conversation not found or caller not a participant",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/MessageResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post" : {
+        "tags" : [ "messaging" ],
+        "summary" : "Send a message in a conversation the caller belongs to",
+        "operationId" : "send_1",
+        "parameters" : [ {
+          "name" : "conversationId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/SendMessageRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "404" : {
+            "description" : "Conversation not found or caller not a participant",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/MessageResponse"
+                }
+              }
+            }
+          },
+          "201" : {
+            "description" : "Created",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/MessageResponse"
+                }
+              }
+            }
           }
         }
       }
@@ -2136,6 +2285,77 @@
         },
         "required" : [ "addresseeId" ]
       },
+      "StartConversationRequest" : {
+        "type" : "object",
+        "properties" : {
+          "userId" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        },
+        "required" : [ "userId" ]
+      },
+      "ConversationResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "otherUserId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "otherDisplayName" : {
+            "type" : "string"
+          },
+          "lastMessagePreview" : {
+            "type" : "string"
+          },
+          "lastMessageAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "unread" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        }
+      },
+      "SendMessageRequest" : {
+        "type" : "object",
+        "properties" : {
+          "body" : {
+            "type" : "string",
+            "maxLength" : 4000,
+            "minLength" : 0
+          }
+        },
+        "required" : [ "body" ]
+      },
+      "MessageResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "senderId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "senderDisplayName" : {
+            "type" : "string"
+          },
+          "body" : {
+            "type" : "string"
+          },
+          "createdAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        }
+      },
       "CreateOrganization" : {
         "type" : "object",
         "properties" : {
@@ -2310,7 +2530,7 @@
           },
           "type" : {
             "type" : "string",
-            "enum" : [ "SLOT_CANCELLED", "SLOT_MOVED" ]
+            "enum" : [ "SLOT_CANCELLED", "SLOT_MOVED", "NEW_MESSAGE" ]
           },
           "message" : {
             "type" : "string"

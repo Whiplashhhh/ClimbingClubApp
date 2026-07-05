@@ -283,6 +283,42 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/conversations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The caller's conversations, most recently active first */
+        get: operations["conversations"];
+        put?: never;
+        /** Start (or fetch) a conversation with an eligible member — a coach or one of their students */
+        post: operations["start_1"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/conversations/{conversationId}/messages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Messages of a conversation the caller belongs to (marks received messages as read) */
+        get: operations["messages"];
+        put?: never;
+        /** Send a message in a conversation the caller belongs to */
+        post: operations["send_1"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/auth/register": {
         parameters: {
             query?: never;
@@ -962,6 +998,35 @@ export interface components {
             /** Format: uuid */
             addresseeId: string;
         };
+        StartConversationRequest: {
+            /** Format: uuid */
+            userId: string;
+        };
+        ConversationResponse: {
+            /** Format: uuid */
+            id?: string;
+            /** Format: uuid */
+            otherUserId?: string;
+            otherDisplayName?: string;
+            lastMessagePreview?: string;
+            /** Format: date-time */
+            lastMessageAt?: string;
+            /** Format: int64 */
+            unread?: number;
+        };
+        SendMessageRequest: {
+            body: string;
+        };
+        MessageResponse: {
+            /** Format: uuid */
+            id?: string;
+            /** Format: uuid */
+            senderId?: string;
+            senderDisplayName?: string;
+            body?: string;
+            /** Format: date-time */
+            createdAt?: string;
+        };
         CreateOrganization: {
             name: string;
             /** @enum {string} */
@@ -1025,7 +1090,7 @@ export interface components {
             /** Format: uuid */
             id?: string;
             /** @enum {string} */
-            type?: "SLOT_CANCELLED" | "SLOT_MOVED";
+            type?: "SLOT_CANCELLED" | "SLOT_MOVED" | "NEW_MESSAGE";
             message?: string;
             /** Format: date-time */
             readAt?: string;
@@ -1701,6 +1766,125 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    conversations: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ConversationResponse"][];
+                };
+            };
+        };
+    };
+    start_1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StartConversationRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ConversationResponse"];
+                };
+            };
+            /** @description Member not found in the caller's organization */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ConversationResponse"];
+                };
+            };
+            /** @description Self-conversation or no coaching relationship */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ConversationResponse"];
+                };
+            };
+        };
+    };
+    messages: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                conversationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Conversation not found or caller not a participant */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["MessageResponse"][];
+                };
+            };
+        };
+    };
+    send_1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                conversationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SendMessageRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["MessageResponse"];
+                };
+            };
+            /** @description Conversation not found or caller not a participant */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["MessageResponse"];
+                };
             };
         };
     };
