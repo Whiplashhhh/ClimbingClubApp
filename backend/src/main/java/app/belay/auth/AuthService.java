@@ -68,6 +68,16 @@ public class AuthService {
                 status));
     }
 
+    /** Change le mot de passe après vérification de l'actuel (sinon 400). */
+    @Transactional
+    public void changePassword(UUID userId, String currentPassword, String newPassword) {
+        AppUser user = userRepository.findById(userId).orElseThrow(() -> new NotFoundException("User not found"));
+        if (!passwordEncoder.matches(currentPassword, user.getPasswordHash())) {
+            throw new IllegalArgumentException("Current password is incorrect");
+        }
+        user.setPasswordHash(passwordEncoder.encode(newPassword));
+    }
+
     private String generateSlug(String name) {
         String base = Normalizer.normalize(name, Normalizer.Form.NFD)
                 .replaceAll("\\p{M}", "")

@@ -1,5 +1,6 @@
 package app.belay.auth;
 
+import app.belay.auth.dto.ChangePasswordRequest;
 import app.belay.auth.dto.LoginRequest;
 import app.belay.auth.dto.MeResponse;
 import app.belay.auth.dto.RegisterRequest;
@@ -84,6 +85,16 @@ public class AuthController {
     @Transactional(readOnly = true)
     public MeResponse me(@AuthenticationPrincipal UserPrincipal principal) {
         return MeResponse.from(loadUser(principal));
+    }
+
+    @PostMapping("/change-password")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @Operation(summary = "Change the current user's password")
+    @ApiResponse(responseCode = "204", description = "Password changed")
+    @ApiResponse(responseCode = "400", description = "Current password is incorrect or new password too weak")
+    public void changePassword(
+            @AuthenticationPrincipal UserPrincipal principal, @Valid @RequestBody ChangePasswordRequest body) {
+        authService.changePassword(principal.id(), body.currentPassword(), body.newPassword());
     }
 
     private AppUser loadUser(UserPrincipal principal) {

@@ -1037,6 +1037,31 @@
         }
       }
     },
+    "/api/auth/change-password" : {
+      "post" : {
+        "tags" : [ "auth" ],
+        "summary" : "Change the current user's password",
+        "operationId" : "changePassword",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ChangePasswordRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "204" : {
+            "description" : "Password changed"
+          },
+          "400" : {
+            "description" : "Current password is incorrect or new password too weak"
+          }
+        }
+      }
+    },
     "/api/sessions/{sessionId}" : {
       "delete" : {
         "tags" : [ "sessions" ],
@@ -2532,6 +2557,21 @@
           }
         },
         "required" : [ "email", "password" ]
+      },
+      "ChangePasswordRequest" : {
+        "type" : "object",
+        "properties" : {
+          "currentPassword" : {
+            "type" : "string",
+            "minLength" : 1
+          },
+          "newPassword" : {
+            "type" : "string",
+            "maxLength" : 72,
+            "minLength" : 8
+          }
+        },
+        "required" : [ "currentPassword", "newPassword" ]
       },
       "UpdateSessionRequest" : {
         "type" : "object",
