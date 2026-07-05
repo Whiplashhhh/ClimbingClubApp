@@ -2302,12 +2302,16 @@
             "type" : "string",
             "format" : "uuid"
           },
+          "type" : {
+            "type" : "string",
+            "enum" : [ "DIRECT", "SLOT", "GENERAL" ]
+          },
+          "title" : {
+            "type" : "string"
+          },
           "otherUserId" : {
             "type" : "string",
             "format" : "uuid"
-          },
-          "otherDisplayName" : {
-            "type" : "string"
           },
           "lastMessagePreview" : {
             "type" : "string"

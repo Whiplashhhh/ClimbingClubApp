@@ -1005,9 +1005,11 @@ export interface components {
         ConversationResponse: {
             /** Format: uuid */
             id?: string;
+            /** @enum {string} */
+            type?: "DIRECT" | "SLOT" | "GENERAL";
+            title?: string;
             /** Format: uuid */
             otherUserId?: string;
-            otherDisplayName?: string;
             lastMessagePreview?: string;
             /** Format: date-time */
             lastMessageAt?: string;

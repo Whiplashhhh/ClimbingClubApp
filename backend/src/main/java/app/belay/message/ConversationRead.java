@@ -10,15 +10,14 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
-import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import java.time.Instant;
 import java.util.UUID;
 
-/** Un message dans un fil ; {@code readAt} marque sa lecture par le destinataire (NULL = non lu). */
+/** Dernière lecture d'un fil par un participant : sert au décompte des non-lus (groupes compris). */
 @Entity
-@Table(name = "message")
-public class Message {
+@Table(name = "conversation_read")
+public class ConversationRead {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -33,46 +32,26 @@ public class Message {
     private Organization organization;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "sender_id", nullable = false)
-    private AppUser sender;
+    @JoinColumn(name = "user_id", nullable = false)
+    private AppUser user;
 
-    @Column(nullable = false, length = 4000)
-    private String body;
+    @Column(name = "last_read_at", nullable = false)
+    private Instant lastReadAt;
 
-    @Column(name = "created_at", nullable = false)
-    private Instant createdAt;
+    protected ConversationRead() {}
 
-    protected Message() {}
-
-    public Message(Organization organization, Conversation conversation, AppUser sender, String body) {
+    public ConversationRead(Organization organization, Conversation conversation, AppUser user, Instant lastReadAt) {
         this.organization = organization;
         this.conversation = conversation;
-        this.sender = sender;
-        this.body = body;
+        this.user = user;
+        this.lastReadAt = lastReadAt;
     }
 
-    @PrePersist
-    void onCreate() {
-        createdAt = Instant.now();
+    public void markReadAt(Instant at) {
+        this.lastReadAt = at;
     }
 
     public UUID getId() {
         return id;
-    }
-
-    public Conversation getConversation() {
-        return conversation;
-    }
-
-    public AppUser getSender() {
-        return sender;
-    }
-
-    public String getBody() {
-        return body;
-    }
-
-    public Instant getCreatedAt() {
-        return createdAt;
     }
 }

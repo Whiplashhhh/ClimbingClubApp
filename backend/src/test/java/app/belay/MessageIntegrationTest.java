@@ -13,9 +13,9 @@ import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpStatus;
 
 /**
- * Chemin critique de la Phase 6B (messagerie privée) : un fil ne relie qu'un moniteur et l'un de
- * ses élèves (relation dérivée d'un créneau) ; échange de messages, non-lus et notification ;
- * isolation inter-organisations (anti-IDOR).
+ * Chemin critique de la messagerie (retours n°5) : fils 1:1 moniteur↔élève, groupes par créneau et
+ * groupe général du club (auto-provisionnés, accès calculé), non-lus par participant, notification
+ * réservée aux 1:1, et isolation inter-organisations (anti-IDOR).
  */
 @Import(TestcontainersConfiguration.class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
@@ -31,7 +31,6 @@ class MessageIntegrationTest {
     private ApiActor member2;
     private String coachId;
     private String memberId;
-    private String member2Id;
 
     @BeforeEach
     void setUp() {
@@ -59,7 +58,7 @@ class MessageIntegrationTest {
         member = new ApiActor(port);
         memberId = joinAndApprove(member, "member-" + tag + "@club.fr", "Member", slug);
         member2 = new ApiActor(port);
-        member2Id = joinAndApprove(member2, "member2-" + tag + "@club.fr", "Member Two", slug);
+        joinAndApprove(member2, "member2-" + tag + "@club.fr", "Member Two", slug);
 
         // Le moniteur crée son créneau et rattache l'élève (member) — pas member2
         String slotId = coach.post(
@@ -89,79 +88,77 @@ class MessageIntegrationTest {
     }
 
     @Test
-    void coachAndStudentExchangeMessagesWithUnreadAndNotification() {
-        // L'élève démarre un fil avec son moniteur
+    void directMessagingKeepsWorkingWithUnreadAndNotification() {
         String conversationId = member.post("/api/conversations", Map.of("userId", coachId), JsonNode.class)
                 .getBody()
                 .path("id")
                 .asText();
+        member.post(
+                "/api/conversations/" + conversationId + "/messages",
+                Map.of("body", "Bonjour coach !"),
+                JsonNode.class);
 
-        // Il envoie un message
-        assertThat(member.post(
-                                "/api/conversations/" + conversationId + "/messages",
-                                Map.of("body", "Bonjour coach !"),
-                                JsonNode.class)
-                        .getStatusCode())
-                .isEqualTo(HttpStatus.CREATED);
+        JsonNode coachDirect = findByType(coach, "DIRECT");
+        assertThat(coachDirect.path("title").asText()).isEqualTo("Member");
+        assertThat(coachDirect.path("lastMessagePreview").asText()).isEqualTo("Bonjour coach !");
+        assertThat(coachDirect.path("unread").asLong()).isEqualTo(1);
 
-        // Le moniteur voit le fil avec l'aperçu et un non-lu
-        JsonNode coachInbox =
-                coach.get("/api/conversations", JsonNode.class).getBody().get(0);
-        assertThat(coachInbox.path("otherDisplayName").asText()).isEqualTo("Member");
-        assertThat(coachInbox.path("lastMessagePreview").asText()).isEqualTo("Bonjour coach !");
-        assertThat(coachInbox.path("unread").asLong()).isEqualTo(1);
+        // Ouvrir marque lu
+        coach.get("/api/conversations/" + conversationId + "/messages", JsonNode.class);
+        assertThat(findByType(coach, "DIRECT").path("unread").asLong()).isZero();
 
-        // Il ouvre le fil → les messages sont visibles et marqués lus
-        JsonNode thread = coach.get("/api/conversations/" + conversationId + "/messages", JsonNode.class)
-                .getBody();
-        assertThat(thread).hasSize(1);
-        assertThat(thread.get(0).path("body").asText()).isEqualTo("Bonjour coach !");
-        assertThat(coach.get("/api/conversations", JsonNode.class)
-                        .getBody()
-                        .get(0)
-                        .path("unread")
-                        .asLong())
-                .isZero();
-
-        // Il répond → l'élève a un non-lu ET une notification in-app
-        coach.post(
-                "/api/conversations/" + conversationId + "/messages", Map.of("body", "Salut, à jeudi"), JsonNode.class);
-        assertThat(member.get("/api/conversations", JsonNode.class)
-                        .getBody()
-                        .get(0)
-                        .path("unread")
-                        .asLong())
-                .isEqualTo(1);
-        JsonNode memberNotifs = member.get("/api/notifications", JsonNode.class).getBody();
-        assertThat(memberNotifs.path("unreadCount").asLong()).isEqualTo(1);
-        assertThat(memberNotifs.path("items").get(0).path("message").asText()).isEqualTo("Nouveau message de Coach");
-
-        // Démarrer à nouveau le fil renvoie le même (pas de doublon)
-        assertThat(coach.post("/api/conversations", Map.of("userId", memberId), JsonNode.class)
-                        .getBody()
-                        .path("id")
-                        .asText())
-                .isEqualTo(conversationId);
+        // Réponse → l'élève a un non-lu ET une notification in-app (réservée aux 1:1)
+        coach.post("/api/conversations/" + conversationId + "/messages", Map.of("body", "Salut"), JsonNode.class);
+        assertThat(findByType(member, "DIRECT").path("unread").asLong()).isEqualTo(1);
+        JsonNode notifs = member.get("/api/notifications", JsonNode.class).getBody();
+        assertThat(notifs.path("unreadCount").asLong()).isEqualTo(1);
+        assertThat(notifs.path("items").get(0).path("message").asText()).isEqualTo("Nouveau message de Coach");
     }
 
     @Test
-    void startingAConversationRequiresACoachingRelationship() {
-        // member2 n'est rattaché à aucun créneau du moniteur → pas de fil possible
-        assertThat(member2.post("/api/conversations", Map.of("userId", coachId), JsonNode.class)
+    void everyoneSeesTheGeneralGroupAndItDoesNotNotify() {
+        // Le groupe général apparaît pour tous, même sans créneau (member2)
+        assertThat(findByType(member2, "GENERAL").path("title").asText()).isEqualTo("Tout le club");
+        String generalId = findByType(member, "GENERAL").path("id").asText();
+
+        member.post("/api/conversations/" + generalId + "/messages", Map.of("body", "Salut le club"), JsonNode.class);
+
+        // member2 voit le message en non-lu, sans notification (les groupes ne notifient pas)
+        assertThat(findByType(member2, "GENERAL").path("unread").asLong()).isEqualTo(1);
+        assertThat(member2.get("/api/notifications", JsonNode.class)
+                        .getBody()
+                        .path("unreadCount")
+                        .asLong())
+                .isZero();
+
+        // member2 peut aussi écrire dans le groupe général (tout le monde écrit)
+        assertThat(member2.post(
+                                "/api/conversations/" + generalId + "/messages",
+                                Map.of("body", "Coucou"),
+                                JsonNode.class)
                         .getStatusCode())
-                .isEqualTo(HttpStatus.CONFLICT);
-        // Deux simples membres entre eux → pas de relation moniteur/élève
-        assertThat(member.post("/api/conversations", Map.of("userId", member2Id), JsonNode.class)
+                .isEqualTo(HttpStatus.CREATED);
+    }
+
+    @Test
+    void slotGroupIsVisibleToParticipantsOnly() {
+        // member (rattaché) voit le groupe du créneau ; member2 (non rattaché) non
+        JsonNode slotGroup = findByTitle(member, "Ados");
+        assertThat(slotGroup.path("type").asText()).isEqualTo("SLOT");
+        String slotGroupId = slotGroup.path("id").asText();
+        assertThat(findByTitleOrNull(member2, "Ados")).isNull();
+
+        // Le moniteur poste dans le groupe → l'élève a un non-lu
+        coach.post("/api/conversations/" + slotGroupId + "/messages", Map.of("body", "RDV jeudi"), JsonNode.class);
+        assertThat(findByTitle(member, "Ados").path("unread").asLong()).isEqualTo(1);
+
+        // member2 ne peut ni lire ni écrire dans ce groupe → 404 (existence masquée)
+        assertThat(member2.get("/api/conversations/" + slotGroupId + "/messages", JsonNode.class)
                         .getStatusCode())
-                .isEqualTo(HttpStatus.CONFLICT);
-        // Soi-même → refusé
-        assertThat(member.post("/api/conversations", Map.of("userId", memberId), JsonNode.class)
-                        .getStatusCode())
-                .isEqualTo(HttpStatus.CONFLICT);
-        // Membre inexistant dans l'org → 404
-        assertThat(member.post(
-                                "/api/conversations",
-                                Map.of("userId", UUID.randomUUID().toString()),
+                .isEqualTo(HttpStatus.NOT_FOUND);
+        assertThat(member2.post(
+                                "/api/conversations/" + slotGroupId + "/messages",
+                                Map.of("body", "Intrus"),
                                 JsonNode.class)
                         .getStatusCode())
                 .isEqualTo(HttpStatus.NOT_FOUND);
@@ -169,11 +166,8 @@ class MessageIntegrationTest {
 
     @Test
     void conversationsAreIsolatedBetweenOrganizations() {
-        String conversationId = member.post("/api/conversations", Map.of("userId", coachId), JsonNode.class)
-                .getBody()
-                .path("id")
-                .asText();
-        member.post("/api/conversations/" + conversationId + "/messages", Map.of("body", "Interne"), JsonNode.class);
+        String generalId = findByType(member, "GENERAL").path("id").asText();
+        member.post("/api/conversations/" + generalId + "/messages", Map.of("body", "Interne"), JsonNode.class);
 
         ApiActor ownerB = new ApiActor(port);
         ownerB.post(
@@ -189,16 +183,47 @@ class MessageIntegrationTest {
                         Map.of("name", "Autre club " + tag, "climbingType", "BOULDER")),
                 JsonNode.class);
 
-        // B ne voit aucun fil et ne peut ni lire ni écrire dans celui de A → 404 (existence masquée)
-        assertThat(ownerB.get("/api/conversations", JsonNode.class).getBody()).isEmpty();
-        assertThat(ownerB.get("/api/conversations/" + conversationId + "/messages", JsonNode.class)
+        // B a SON propre groupe général, jamais celui de A ; il ne peut lire/écrire dans le fil de A
+        JsonNode bGeneral = findByType(ownerB, "GENERAL");
+        assertThat(bGeneral.path("id").asText()).isNotEqualTo(generalId);
+        assertThat(ownerB.get("/api/conversations/" + generalId + "/messages", JsonNode.class)
                         .getStatusCode())
                 .isEqualTo(HttpStatus.NOT_FOUND);
         assertThat(ownerB.post(
-                                "/api/conversations/" + conversationId + "/messages",
+                                "/api/conversations/" + generalId + "/messages",
                                 Map.of("body", "Intrusion"),
                                 JsonNode.class)
                         .getStatusCode())
                 .isEqualTo(HttpStatus.NOT_FOUND);
+    }
+
+    private JsonNode conversations(ApiActor actor) {
+        return actor.get("/api/conversations", JsonNode.class).getBody();
+    }
+
+    private JsonNode findByType(ApiActor actor, String type) {
+        for (JsonNode c : conversations(actor)) {
+            if (c.path("type").asText().equals(type)) {
+                return c;
+            }
+        }
+        throw new AssertionError("No conversation of type " + type);
+    }
+
+    private JsonNode findByTitle(ApiActor actor, String title) {
+        JsonNode found = findByTitleOrNull(actor, title);
+        if (found == null) {
+            throw new AssertionError("No conversation titled " + title);
+        }
+        return found;
+    }
+
+    private JsonNode findByTitleOrNull(ApiActor actor, String title) {
+        for (JsonNode c : conversations(actor)) {
+            if (c.path("title").asText().equals(title)) {
+                return c;
+            }
+        }
+        return null;
     }
 }
