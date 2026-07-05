@@ -930,6 +930,8 @@ export interface components {
         PollResponse: {
             /** Format: uuid */
             id?: string;
+            /** Format: uuid */
+            authorId?: string;
             authorDisplayName?: string;
             /** @enum {string} */
             audience?: "ORG" | "COACH_STUDENTS";

@@ -12,6 +12,7 @@ import java.util.UUID;
  */
 public record PollResponse(
         UUID id,
+        UUID authorId,
         String authorDisplayName,
         PostAudience audience,
         String question,
@@ -26,6 +27,7 @@ public record PollResponse(
         long total = options.stream().mapToLong(PollOptionResponse::votes).sum();
         return new PollResponse(
                 poll.getId(),
+                poll.getAuthor().getId(),
                 poll.getAuthor().getDisplayName(),
                 poll.getAudience(),
                 poll.getQuestion(),
