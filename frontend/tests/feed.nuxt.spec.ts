@@ -54,6 +54,31 @@ const feedPage = {
   hasNext: false,
 }
 
+const poll = {
+  id: '77777777-7777-4777-8777-777777777777',
+  authorId: ownerMe.id,
+  authorDisplayName: 'Owner',
+  audience: 'ORG',
+  question: 'Sortie où ?',
+  closed: false,
+  createdAt: '2026-07-04T10:00:00Z',
+  options: [
+    { id: '88888888-8888-4888-8888-888888888888', label: 'Bleau', votes: 1 },
+    { id: '99999999-9999-4999-8999-999999999999', label: 'Ceüse', votes: 0 },
+  ],
+  totalVotes: 1,
+}
+
+// Routeur de mock par défaut : feed paginé, sondages, demandes d'adhésion
+function routeApi(polls: unknown[] = [], pending: unknown[] = []) {
+  return async (path: unknown) => {
+    if (typeof path === 'string' && path.startsWith('/api/feed')) return feedPage
+    if (path === '/api/polls') return polls
+    if (path === '/api/members/pending') return pending
+    return {}
+  }
+}
+
 describe('feed page', () => {
   // La clé useAsyncData('feed') est partagée : démonter entre les tests évite qu'une
   // instance précédente capte le handler de la suivante.
@@ -62,7 +87,7 @@ describe('feed page', () => {
   beforeEach(() => {
     clearNuxtData('feed')
     apiFetchMock.mockReset()
-    apiFetchMock.mockResolvedValue(feedPage)
+    apiFetchMock.mockImplementation(routeApi())
   })
 
   afterEach(() => {
@@ -96,17 +121,11 @@ describe('feed page', () => {
   })
 
   it('shows a join-requests banner to admins when requests are pending', async () => {
-    apiFetchMock.mockImplementation(async (path: unknown) => {
-      if (path === '/api/members/pending')
-        return [
-          {
-            id: '44444444-4444-4444-8444-444444444444',
-            displayName: 'Grimpeur',
-            email: 'grimpeur@club.fr',
-          },
-        ]
-      return feedPage
-    })
+    apiFetchMock.mockImplementation(
+      routeApi([], [
+        { id: '44444444-4444-4444-8444-444444444444', displayName: 'Grimpeur', email: 'grimpeur@club.fr' },
+      ]),
+    )
     const auth = useAuthStore()
     auth.me = ownerMe
     auth.initialized = true
@@ -114,6 +133,43 @@ describe('feed page', () => {
     wrapper = await mountSuspended(IndexPage)
     expect(wrapper.find('[data-testid="pending-banner"]').exists()).toBe(true)
     expect(wrapper.text()).toContain("demande d'adhésion en attente")
+  })
+
+  it('interleaves polls in the feed and switches the composer to poll mode', async () => {
+    apiFetchMock.mockImplementation(routeApi([poll]))
+    const auth = useAuthStore()
+    auth.me = ownerMe
+    auth.initialized = true
+
+    wrapper = await mountSuspended(IndexPage)
+    // Le sondage apparaît dans le fil aux côtés des posts
+    expect(wrapper.find('[data-testid="poll-card"]').exists()).toBe(true)
+    expect(wrapper.text()).toContain('Sortie où ?')
+    expect(wrapper.text()).toContain('Assemblée générale')
+
+    // Bascule du composeur vers « Sondage »
+    const pollTab = wrapper.findAll('[data-testid="composer-toggle"] button').find((b) => b.text() === 'Sondage')
+    await pollTab!.trigger('click')
+    expect(wrapper.find('[data-testid="poll-composer"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="post-composer"]').exists()).toBe(false)
+  })
+
+  it('lets a member vote on a poll shown in the feed', async () => {
+    const votedPoll = { ...poll, myOptionId: poll.options[0]!.id, totalVotes: 2 }
+    apiFetchMock.mockImplementation(async (path: unknown, opts?: { method?: string }) => {
+      if (path === `/api/polls/${poll.id}/vote` && opts?.method === 'POST') return votedPoll
+      return routeApi([poll])(path)
+    })
+    const auth = useAuthStore()
+    auth.me = { ...ownerMe, role: 'MEMBER' }
+    auth.initialized = true
+
+    wrapper = await mountSuspended(IndexPage)
+    await wrapper.find('[data-testid="poll-card"] ul button').trigger('click')
+    expect(apiFetchMock).toHaveBeenCalledWith(`/api/polls/${poll.id}/vote`, {
+      method: 'POST',
+      body: { optionId: poll.options[0]!.id },
+    })
   })
 
   it('shows the pending banner instead of the feed for pending members', async () => {

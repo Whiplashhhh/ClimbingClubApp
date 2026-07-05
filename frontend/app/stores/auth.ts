@@ -14,6 +14,8 @@ export const useAuthStore = defineStore('auth', () => {
   const initialized = ref(false)
 
   const isAdmin = computed(() => me.value?.role === 'OWNER' || me.value?.role === 'ADMIN')
+  // Encadrants : président/admin/moniteurs — publient infos & sondages, gèrent les membres
+  const isStaff = computed(() => isAdmin.value || me.value?.role === 'COACH')
   const isActive = computed(() => me.value?.status === 'ACTIVE')
 
   async function fetchMe(): Promise<void> {
@@ -55,5 +57,5 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  return { me, initialized, isAdmin, isActive, fetchMe, login, register, logout }
+  return { me, initialized, isAdmin, isStaff, isActive, fetchMe, login, register, logout }
 })
