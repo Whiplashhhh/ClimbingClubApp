@@ -180,6 +180,41 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/polls": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Polls visible to the caller (same audience rules as the feed), newest first */
+        get: operations["list"];
+        put?: never;
+        /** Create a poll (ORG audience: admins; COACH_STUDENTS: coaches) */
+        post: operations["create_1"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/polls/{pollId}/vote": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Cast or change the caller's vote on a visible, open poll */
+        post: operations["vote"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/notifications/read-all": {
         parameters: {
             query?: never;
@@ -359,7 +394,7 @@ export interface paths {
             cookie?: never;
         };
         /** Latest notifications of the caller, with the unread count */
-        get: operations["list"];
+        get: operations["list_1"];
         put?: never;
         post?: never;
         delete?: never;
@@ -601,6 +636,23 @@ export interface paths {
         post?: never;
         /** Delete a post (author or admins) */
         delete: operations["delete_1"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/polls/{pollId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete a poll (author or admins) */
+        delete: operations["delete_2"];
         options?: never;
         head?: never;
         patch?: never;
@@ -856,6 +908,46 @@ export interface components {
             authorRole?: "OWNER" | "ADMIN" | "COACH" | "MEMBER";
             /** Format: date-time */
             createdAt?: string;
+        };
+        CreatePollRequest: {
+            /** @enum {string} */
+            audience: "ORG" | "COACH_STUDENTS";
+            question: string;
+            /**
+             * Format: date-time
+             * @description Optional closing date; votes are refused past it
+             */
+            closesAt?: string;
+            options: string[];
+        };
+        PollOptionResponse: {
+            /** Format: uuid */
+            id?: string;
+            label?: string;
+            /** Format: int64 */
+            votes?: number;
+        };
+        PollResponse: {
+            /** Format: uuid */
+            id?: string;
+            authorDisplayName?: string;
+            /** @enum {string} */
+            audience?: "ORG" | "COACH_STUDENTS";
+            question?: string;
+            /** Format: date-time */
+            closesAt?: string;
+            closed?: boolean;
+            /** Format: date-time */
+            createdAt?: string;
+            options?: components["schemas"]["PollOptionResponse"][];
+            /** Format: uuid */
+            myOptionId?: string;
+            /** Format: int64 */
+            totalVotes?: number;
+        };
+        CastVoteRequest: {
+            /** Format: uuid */
+            optionId: string;
         };
         MemberResponse: {
             /** Format: uuid */
@@ -1401,6 +1493,103 @@ export interface operations {
             };
         };
     };
+    list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PollResponse"][];
+                };
+            };
+        };
+    };
+    create_1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreatePollRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PollResponse"];
+                };
+            };
+            /** @description Fewer than 2 options or a blank option */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PollResponse"];
+                };
+            };
+            /** @description Role not allowed to publish to the requested audience */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PollResponse"];
+                };
+            };
+        };
+    };
+    vote: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                pollId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CastVoteRequest"];
+            };
+        };
+        responses: {
+            /** @description Poll or option not found / not visible */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PollResponse"];
+                };
+            };
+            /** @description Poll is closed */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PollResponse"];
+                };
+            };
+        };
+    };
     readAll: {
         parameters: {
             query?: never;
@@ -1707,7 +1896,7 @@ export interface operations {
             };
         };
     };
-    list: {
+    list_1: {
         parameters: {
             query?: {
                 page?: number;
@@ -2048,6 +2237,33 @@ export interface operations {
                 content?: never;
             };
             /** @description Post not found in the caller's organization */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    delete_2: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                pollId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Poll not found in the caller's organization */
             404: {
                 headers: {
                     [name: string]: unknown;
