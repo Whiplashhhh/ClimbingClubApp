@@ -48,3 +48,11 @@ Hypothèses prises faute d'information, avec le défaut le plus raisonnable. À 
   Les séances FRIENDS deviennent visibles des amis acceptés ; l'assureur d'une ascension peut
   être un membre actif (prime sur le nom libre) — pas nécessairement un ami, pour ne pas bloquer
   la saisie d'une séance avec un partenaire qu'on vient de rencontrer.
+- **A-014** (2026-07-05) : Sondages (Phase 6) : **choix unique** en v1 (un membre a une seule
+  voix par sondage, remplaçable tant que le sondage est ouvert) — le multi-choix pourra venir
+  plus tard si besoin. Un sondage réutilise l'**audience du fil** (ORG par OWNER/ADMIN,
+  COACH_STUDENTS par un moniteur, visible de ses élèves via le même prédicat que les posts) : pas
+  de nouveau système de ciblage. 2 à 10 options. Échéance (`closesAt`) optionnelle : au-delà, le
+  vote est refusé (409) mais les résultats restent visibles. Résultats (décomptes + total)
+  visibles de tous ceux qui voient le sondage — pas de vote anonyme séparé, cohérent avec un
+  petit club. Suppression par l'auteur ou un admin (comme les posts).

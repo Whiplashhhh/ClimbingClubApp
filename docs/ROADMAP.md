@@ -48,7 +48,7 @@
       des amis acceptés, assureur choisi parmi les membres actifs
 
 ## Phase 6 — Sondages & messagerie
-- [ ] Polls (création / réponse / résultats, mêmes audiences)
+- [x] Polls (création / réponse / résultats, mêmes audiences que le fil — choix unique, clôture optionnelle)
 - [ ] MP élève ↔ moniteur
 
 ## Phase 7 — Finitions PWA
