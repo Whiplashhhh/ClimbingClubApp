@@ -67,6 +67,7 @@ public class Ascent {
             Short rating,
             Short topHold,
             Integer durationSeconds,
+            AppUser belayerUser,
             String belayerName) {
         this.organization = organization;
         this.session = session;
@@ -74,6 +75,7 @@ public class Ascent {
         this.rating = rating;
         this.topHold = topHold;
         this.durationSeconds = durationSeconds;
+        this.belayerUser = belayerUser;
         this.belayerName = belayerName;
     }
 

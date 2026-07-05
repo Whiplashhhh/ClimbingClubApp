@@ -214,6 +214,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/friends/{requesterId}/accept": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Accept an incoming friend request (the caller is the addressee) */
+        post: operations["accept"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/friends/requests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Send a friend request to an active member of the club */
+        post: operations["send"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/auth/register": {
         parameters: {
             query?: never;
@@ -385,6 +419,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/friends": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The caller's accepted friends */
+        get: operations["friends"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/friends/requests/incoming": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Pending friend requests addressed to the caller */
+        get: operations["incoming"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/feed": {
         parameters: {
             query?: never;
@@ -533,6 +601,23 @@ export interface paths {
         post?: never;
         /** Delete a post (author or admins) */
         delete: operations["delete_1"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/friends/{userId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Remove a friend, cancel a sent request, or reject a received one */
+        delete: operations["remove"];
         options?: never;
         head?: never;
         patch?: never;
@@ -715,7 +800,12 @@ export interface components {
              * @description Duration in seconds (optional)
              */
             durationSeconds?: number;
-            /** @description Free-text belayer name (a friend selector comes with the friend graph) */
+            /**
+             * Format: uuid
+             * @description Belayer chosen among the club's active members; takes precedence over belayerName
+             */
+            belayerUserId?: string;
+            /** @description Free-text belayer name (used when no member is selected) */
             belayerName?: string;
         };
         CreateSectorRequest: {
@@ -773,6 +863,10 @@ export interface components {
             displayName?: string;
             /** @enum {string} */
             role?: "OWNER" | "ADMIN" | "COACH" | "MEMBER";
+        };
+        SendFriendRequestRequest: {
+            /** Format: uuid */
+            addresseeId: string;
         };
         CreateOrganization: {
             name: string;
@@ -849,6 +943,14 @@ export interface components {
             id?: string;
             displayName?: string;
             email?: string;
+        };
+        FriendResponse: {
+            /** Format: uuid */
+            id?: string;
+            displayName?: string;
+        };
+        FriendRequestResponse: {
+            requester?: components["schemas"]["FriendResponse"];
         };
         FeedPageResponse: {
             items?: components["schemas"]["FeedPostResponse"][];
@@ -1348,6 +1450,69 @@ export interface operations {
             };
         };
     };
+    accept: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                requesterId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Request not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    send: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SendFriendRequestRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Member not found in the caller's organization */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Self-request, inactive member, or existing link */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     register: {
         parameters: {
             query?: never;
@@ -1627,6 +1792,46 @@ export interface operations {
             };
         };
     };
+    friends: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["FriendResponse"][];
+                };
+            };
+        };
+    };
+    incoming: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["FriendRequestResponse"][];
+                };
+            };
+        };
+    };
     feed: {
         parameters: {
             query?: {
@@ -1843,6 +2048,33 @@ export interface operations {
                 content?: never;
             };
             /** @description Post not found in the caller's organization */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    remove: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                userId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Friendship not found */
             404: {
                 headers: {
                     [name: string]: unknown;

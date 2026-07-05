@@ -18,6 +18,9 @@
     "name" : "feed",
     "description" : "Home feed: posts with an audience, aggregated per user (tenant-scoped)"
   }, {
+    "name" : "friends",
+    "description" : "Friend graph within the organization"
+  }, {
     "name" : "routes",
     "description" : "Wall map: sectors and their routes with hold annotations (tenant-scoped)"
   }, {
@@ -622,6 +625,58 @@
         }
       }
     },
+    "/api/friends/{requesterId}/accept" : {
+      "post" : {
+        "tags" : [ "friends" ],
+        "summary" : "Accept an incoming friend request (the caller is the addressee)",
+        "operationId" : "accept",
+        "parameters" : [ {
+          "name" : "requesterId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "404" : {
+            "description" : "Request not found"
+          },
+          "204" : {
+            "description" : "No Content"
+          }
+        }
+      }
+    },
+    "/api/friends/requests" : {
+      "post" : {
+        "tags" : [ "friends" ],
+        "summary" : "Send a friend request to an active member of the club",
+        "operationId" : "send",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/SendFriendRequestRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "404" : {
+            "description" : "Member not found in the caller's organization"
+          },
+          "409" : {
+            "description" : "Self-request, inactive member, or existing link"
+          },
+          "201" : {
+            "description" : "Created"
+          }
+        }
+      }
+    },
     "/api/auth/register" : {
       "post" : {
         "tags" : [ "auth" ],
@@ -962,6 +1017,50 @@
         }
       }
     },
+    "/api/friends" : {
+      "get" : {
+        "tags" : [ "friends" ],
+        "summary" : "The caller's accepted friends",
+        "operationId" : "friends",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/FriendResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/friends/requests/incoming" : {
+      "get" : {
+        "tags" : [ "friends" ],
+        "summary" : "Pending friend requests addressed to the caller",
+        "operationId" : "incoming",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/FriendRequestResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/feed" : {
       "get" : {
         "tags" : [ "feed" ],
@@ -1225,6 +1324,30 @@
         "responses" : {
           "404" : {
             "description" : "Post not found in the caller's organization"
+          },
+          "204" : {
+            "description" : "No Content"
+          }
+        }
+      }
+    },
+    "/api/friends/{userId}" : {
+      "delete" : {
+        "tags" : [ "friends" ],
+        "summary" : "Remove a friend, cancel a sent request, or reject a received one",
+        "operationId" : "remove",
+        "parameters" : [ {
+          "name" : "userId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "404" : {
+            "description" : "Friendship not found"
           },
           "204" : {
             "description" : "No Content"
@@ -1598,9 +1721,14 @@
             "format" : "int32",
             "description" : "Duration in seconds (optional)"
           },
+          "belayerUserId" : {
+            "type" : "string",
+            "format" : "uuid",
+            "description" : "Belayer chosen among the club's active members; takes precedence over belayerName"
+          },
           "belayerName" : {
             "type" : "string",
-            "description" : "Free-text belayer name (a friend selector comes with the friend graph)",
+            "description" : "Free-text belayer name (used when no member is selected)",
             "maxLength" : 120,
             "minLength" : 0
           }
@@ -1749,6 +1877,16 @@
             "enum" : [ "OWNER", "ADMIN", "COACH", "MEMBER" ]
           }
         }
+      },
+      "SendFriendRequestRequest" : {
+        "type" : "object",
+        "properties" : {
+          "addresseeId" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        },
+        "required" : [ "addresseeId" ]
       },
       "CreateOrganization" : {
         "type" : "object",
@@ -1951,6 +2089,26 @@
           },
           "email" : {
             "type" : "string"
+          }
+        }
+      },
+      "FriendResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "displayName" : {
+            "type" : "string"
+          }
+        }
+      },
+      "FriendRequestResponse" : {
+        "type" : "object",
+        "properties" : {
+          "requester" : {
+            "$ref" : "#/components/schemas/FriendResponse"
           }
         }
       },
