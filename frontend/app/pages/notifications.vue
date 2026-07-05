@@ -51,10 +51,16 @@ async function refresh() {
   }
 }
 
-await useAsyncData('notifications', async () => {
+// Réhydrate les refs depuis la payload (le handler ne se rejoue pas côté client après SSR)
+const { data: initial } = await useAsyncData('notifications', async () => {
   await refresh()
-  return true
+  return { items: items.value, page: page.value, hasNext: hasNext.value }
 })
+if (initial.value) {
+  items.value = initial.value.items
+  page.value = initial.value.page
+  hasNext.value = initial.value.hasNext
+}
 
 useAutoRefresh(refresh)
 </script>

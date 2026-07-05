@@ -136,6 +136,13 @@ async function onLogout() {
             Voies
           </NuxtLink>
           <NuxtLink
+            to="/sessions"
+            class="text-gray-600 hover:text-indigo-600"
+            exact-active-class="font-semibold text-indigo-600"
+          >
+            Séances
+          </NuxtLink>
+          <NuxtLink
             to="/members"
             class="text-gray-600 hover:text-indigo-600"
             exact-active-class="font-semibold text-indigo-600"

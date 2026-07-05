@@ -24,6 +24,9 @@
     "name" : "slots",
     "description" : "Weekly recurring training slots and their member groups (tenant-scoped)"
   }, {
+    "name" : "sessions",
+    "description" : "Climbing sessions and ascents (tenant-scoped, owner-managed)"
+  }, {
     "name" : "auth",
     "description" : "Registration, login and session management"
   }, {
@@ -317,6 +320,83 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/SlotResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/sessions" : {
+      "post" : {
+        "tags" : [ "sessions" ],
+        "summary" : "Start a session",
+        "operationId" : "start",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/CreateSessionRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "description" : "Created",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SessionResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/sessions/{sessionId}/ascents" : {
+      "post" : {
+        "tags" : [ "sessions" ],
+        "summary" : "Add an ascent to a session (owner only)",
+        "operationId" : "addAscent",
+        "parameters" : [ {
+          "name" : "sessionId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/CreateAscentRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "404" : {
+            "description" : "Session or route not found in the caller's organization",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SessionResponse"
+                }
+              }
+            }
+          },
+          "201" : {
+            "description" : "Created",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SessionResponse"
                 }
               }
             }
@@ -630,6 +710,66 @@
         }
       }
     },
+    "/api/sessions/{sessionId}" : {
+      "delete" : {
+        "tags" : [ "sessions" ],
+        "summary" : "Delete a session and its ascents (owner only)",
+        "operationId" : "delete",
+        "parameters" : [ {
+          "name" : "sessionId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "404" : {
+            "description" : "Session not found in the caller's organization"
+          },
+          "204" : {
+            "description" : "No Content"
+          }
+        }
+      },
+      "patch" : {
+        "tags" : [ "sessions" ],
+        "summary" : "Update a session's note and visibility (owner only)",
+        "operationId" : "update",
+        "parameters" : [ {
+          "name" : "sessionId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/UpdateSessionRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "404" : {
+            "description" : "Session not found in the caller's organization",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SessionResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/members/{memberId}/role" : {
       "patch" : {
         "tags" : [ "members" ],
@@ -661,6 +801,50 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/MemberResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/sessions/mine" : {
+      "get" : {
+        "tags" : [ "sessions" ],
+        "summary" : "The caller's own sessions with their ascents, newest first",
+        "operationId" : "mine",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/SessionResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/sessions/club" : {
+      "get" : {
+        "tags" : [ "sessions" ],
+        "summary" : "Club activity: the caller's sessions plus other members' CLUB-visible sessions",
+        "operationId" : "club",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/SessionResponse"
+                  }
                 }
               }
             }
@@ -937,6 +1121,42 @@
         }
       }
     },
+    "/api/sessions/{sessionId}/ascents/{ascentId}" : {
+      "delete" : {
+        "tags" : [ "sessions" ],
+        "summary" : "Remove an ascent from a session (owner only)",
+        "operationId" : "removeAscent",
+        "parameters" : [ {
+          "name" : "sessionId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "name" : "ascentId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "404" : {
+            "description" : "Session or ascent not found",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SessionResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/sectors/{sectorId}" : {
       "delete" : {
         "tags" : [ "routes" ],
@@ -992,7 +1212,7 @@
       "delete" : {
         "tags" : [ "feed" ],
         "summary" : "Delete a post (author or admins)",
-        "operationId" : "delete",
+        "operationId" : "delete_1",
         "parameters" : [ {
           "name" : "postId",
           "in" : "path",
@@ -1267,6 +1487,126 @@
         },
         "required" : [ "action", "date" ]
       },
+      "CreateSessionRequest" : {
+        "type" : "object",
+        "properties" : {
+          "startedAt" : {
+            "type" : "string",
+            "format" : "date-time",
+            "description" : "Defaults to now if omitted"
+          },
+          "note" : {
+            "type" : "string",
+            "maxLength" : 500,
+            "minLength" : 0
+          },
+          "visibility" : {
+            "type" : "string",
+            "enum" : [ "CLUB", "FRIENDS", "PRIVATE" ]
+          }
+        },
+        "required" : [ "visibility" ]
+      },
+      "AscentResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "routeId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "routeName" : {
+            "type" : "string"
+          },
+          "routeGrade" : {
+            "type" : "string"
+          },
+          "rating" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "topHold" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "durationSeconds" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "belayerName" : {
+            "type" : "string"
+          }
+        }
+      },
+      "SessionResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "userId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "userDisplayName" : {
+            "type" : "string"
+          },
+          "startedAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "note" : {
+            "type" : "string"
+          },
+          "visibility" : {
+            "type" : "string",
+            "enum" : [ "CLUB", "FRIENDS", "PRIVATE" ]
+          },
+          "ascents" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/AscentResponse"
+            }
+          }
+        }
+      },
+      "CreateAscentRequest" : {
+        "type" : "object",
+        "properties" : {
+          "routeId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "rating" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "Appreciation 1..5",
+            "maximum" : 5,
+            "minimum" : 1
+          },
+          "topHold" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "Highest hold reached"
+          },
+          "durationSeconds" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "Duration in seconds (optional)"
+          },
+          "belayerName" : {
+            "type" : "string",
+            "description" : "Free-text belayer name (a friend selector comes with the friend graph)",
+            "maxLength" : 120,
+            "minLength" : 0
+          }
+        },
+        "required" : [ "routeId" ]
+      },
       "CreateSectorRequest" : {
         "type" : "object",
         "properties" : {
@@ -1523,6 +1863,21 @@
           }
         },
         "required" : [ "email", "password" ]
+      },
+      "UpdateSessionRequest" : {
+        "type" : "object",
+        "properties" : {
+          "note" : {
+            "type" : "string",
+            "maxLength" : 500,
+            "minLength" : 0
+          },
+          "visibility" : {
+            "type" : "string",
+            "enum" : [ "CLUB", "FRIENDS", "PRIVATE" ]
+          }
+        },
+        "required" : [ "visibility" ]
       },
       "UpdateRoleRequest" : {
         "type" : "object",

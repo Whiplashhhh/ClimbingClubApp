@@ -91,6 +91,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/sessions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Start a session */
+        post: operations["start"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/sessions/{sessionId}/ascents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Add an ascent to a session (owner only) */
+        post: operations["addAscent"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/sectors": {
         parameters: {
             query?: never;
@@ -214,6 +248,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/sessions/{sessionId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete a session and its ascents (owner only) */
+        delete: operations["delete"];
+        options?: never;
+        head?: never;
+        /** Update a session's note and visibility (owner only) */
+        patch: operations["update"];
+        trace?: never;
+    };
     "/api/members/{memberId}/role": {
         parameters: {
             query?: never;
@@ -229,6 +281,40 @@ export interface paths {
         head?: never;
         /** Change a member's role (admins only, OWNER excluded) */
         patch: operations["changeRole"];
+        trace?: never;
+    };
+    "/api/sessions/mine": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The caller's own sessions with their ascents, newest first */
+        get: operations["mine"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/sessions/club": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Club activity: the caller's sessions plus other members' CLUB-visible sessions */
+        get: operations["club"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/api/notifications": {
@@ -384,6 +470,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/sessions/{sessionId}/ascents/{ascentId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Remove an ascent from a session (owner only) */
+        delete: operations["removeAscent"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/sectors/{sectorId}": {
         parameters: {
             query?: never;
@@ -429,7 +532,7 @@ export interface paths {
         put?: never;
         post?: never;
         /** Delete a post (author or admins) */
-        delete: operations["delete"];
+        delete: operations["delete_1"];
         options?: never;
         head?: never;
         patch?: never;
@@ -556,6 +659,65 @@ export interface components {
             newStartTime?: string;
             note?: string;
         };
+        CreateSessionRequest: {
+            /**
+             * Format: date-time
+             * @description Defaults to now if omitted
+             */
+            startedAt?: string;
+            note?: string;
+            /** @enum {string} */
+            visibility: "CLUB" | "FRIENDS" | "PRIVATE";
+        };
+        AscentResponse: {
+            /** Format: uuid */
+            id?: string;
+            /** Format: uuid */
+            routeId?: string;
+            routeName?: string;
+            routeGrade?: string;
+            /** Format: int32 */
+            rating?: number;
+            /** Format: int32 */
+            topHold?: number;
+            /** Format: int32 */
+            durationSeconds?: number;
+            belayerName?: string;
+        };
+        SessionResponse: {
+            /** Format: uuid */
+            id?: string;
+            /** Format: uuid */
+            userId?: string;
+            userDisplayName?: string;
+            /** Format: date-time */
+            startedAt?: string;
+            note?: string;
+            /** @enum {string} */
+            visibility?: "CLUB" | "FRIENDS" | "PRIVATE";
+            ascents?: components["schemas"]["AscentResponse"][];
+        };
+        CreateAscentRequest: {
+            /** Format: uuid */
+            routeId: string;
+            /**
+             * Format: int32
+             * @description Appreciation 1..5
+             */
+            rating?: number;
+            /**
+             * Format: int32
+             * @description Highest hold reached
+             */
+            topHold?: number;
+            /**
+             * Format: int32
+             * @description Duration in seconds (optional)
+             */
+            durationSeconds?: number;
+            /** @description Free-text belayer name (a friend selector comes with the friend graph) */
+            belayerName?: string;
+        };
         CreateSectorRequest: {
             name: string;
         };
@@ -651,6 +813,11 @@ export interface components {
             /** Format: email */
             email: string;
             password: string;
+        };
+        UpdateSessionRequest: {
+            note?: string;
+            /** @enum {string} */
+            visibility: "CLUB" | "FRIENDS" | "PRIVATE";
         };
         UpdateRoleRequest: {
             /** @enum {string} */
@@ -943,6 +1110,65 @@ export interface operations {
             };
         };
     };
+    start: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateSessionRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["SessionResponse"];
+                };
+            };
+        };
+    };
+    addAscent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                sessionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateAscentRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["SessionResponse"];
+                };
+            };
+            /** @description Session or route not found in the caller's organization */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["SessionResponse"];
+                };
+            };
+        };
+    };
     listSectors: {
         parameters: {
             query?: never;
@@ -1197,6 +1423,59 @@ export interface operations {
             };
         };
     };
+    delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                sessionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Session not found in the caller's organization */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                sessionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateSessionRequest"];
+            };
+        };
+        responses: {
+            /** @description Session not found in the caller's organization */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["SessionResponse"];
+                };
+            };
+        };
+    };
     changeRole: {
         parameters: {
             query?: never;
@@ -1219,6 +1498,46 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["MemberResponse"];
+                };
+            };
+        };
+    };
+    mine: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["SessionResponse"][];
+                };
+            };
+        };
+    };
+    club: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["SessionResponse"][];
                 };
             };
         };
@@ -1421,6 +1740,29 @@ export interface operations {
             };
         };
     };
+    removeAscent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                sessionId: string;
+                ascentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Session or ascent not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["SessionResponse"];
+                };
+            };
+        };
+    };
     deleteSector: {
         parameters: {
             query?: never;
@@ -1482,7 +1824,7 @@ export interface operations {
             };
         };
     };
-    delete: {
+    delete_1: {
         parameters: {
             query?: never;
             header?: never;

@@ -54,10 +54,15 @@ async function changeRole(member: Member, event: Event) {
   }
 }
 
-await useAsyncData('members', async () => {
+// Réhydrate les refs depuis la payload (le handler ne se rejoue pas côté client après SSR)
+const { data: initial } = await useAsyncData('members', async () => {
   await loadMembers()
-  return true
+  return { members: members.value, pendingMembers: pendingMembers.value }
 })
+if (initial.value) {
+  members.value = initial.value.members
+  pendingMembers.value = initial.value.pendingMembers
+}
 </script>
 
 <template>

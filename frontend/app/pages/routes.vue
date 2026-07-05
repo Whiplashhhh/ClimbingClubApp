@@ -111,10 +111,15 @@ async function mutate(action: () => Promise<unknown>, failureMessage = "L'opéra
   }
 }
 
-await useAsyncData('sectors', async () => {
+// Réhydrate les refs depuis la payload (le handler ne se rejoue pas côté client après SSR)
+const { data: initial } = await useAsyncData('sectors', async () => {
   if (auth.isActive) await loadSectors()
-  return true
+  return { sectors: sectors.value, routeSectorId: routeSectorId.value }
 })
+if (initial.value) {
+  sectors.value = initial.value.sectors
+  routeSectorId.value = initial.value.routeSectorId
+}
 
 useAutoRefresh(() => {
   if (auth.isActive) loadSectors()

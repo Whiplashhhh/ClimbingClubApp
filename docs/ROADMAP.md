@@ -43,8 +43,8 @@
 - [x] Overlay d'annotations en lecture (l'éditeur reste en Phase 7)
 
 ## Phase 5 — Séances & social
-- [ ] Séances + ascensions (note, prise max, temps, assureur)
-- [ ] Amis, fil d'amis, confidentialité
+- [x] Séances + ascensions (note, prise max, temps, assureur — assureur en nom libre, ami en 5B)
+- [ ] Amis, fil d'amis, confidentialité (5B) — confidentialité par séance déjà en place
 
 ## Phase 6 — Sondages & messagerie
 - [ ] Polls (création / réponse / résultats, mêmes audiences)

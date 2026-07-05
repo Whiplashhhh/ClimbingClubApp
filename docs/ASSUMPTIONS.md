@@ -35,3 +35,7 @@ Hypothèses prises faute d'information, avec le défaut le plus raisonnable. À 
   (structure du club), les **voies** par les moniteurs et admins (créateur-ou-admin pour
   modifier/supprimer). Les prises sont des points relatifs (0..1) en JSONB, rendues en overlay
   SVG — l'éditeur graphique arrive en Phase 7, l'API PUT /holds existe déjà.
+- **A-012** (2026-07-05) : Séances : confidentialité par séance (CLUB | FRIENDS | PRIVATE).
+  Tant que le graphe d'amis (Phase 5B) n'existe pas, FRIENDS équivaut à PRIVATE (visible du seul
+  auteur). L'assureur est un **nom libre** en 5A ; la sélection d'un ami arrivera en 5B (la
+  colonne `belayer_user_id` est déjà prête). L'ascension référence une voie du mur (Phase 4).

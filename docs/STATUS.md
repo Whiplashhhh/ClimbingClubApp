@@ -1,6 +1,6 @@
 # État d'avancement — Belay
 
-> Mis à jour : 2026-07-04 (Phases 3 et 4 complètes + retours de test n°2 et n°3).
+> Mis à jour : 2026-07-05 (Phase 5A : séances & ascensions ; correctif SSR au rechargement).
 
 ## Fait (mergé dans `main`, CI verte)
 
@@ -67,21 +67,29 @@
   formulaires, **overlay SVG des prises en lecture** avec bouton afficher/masquer — l'éditeur
   d'annotations reste en Phase 7) ; tests intégration + vitest.
 
+- **Phase 5A — Séances & ascensions** : `ClimbingSession` + `Ascent` (V9) ; lancer une séance,
+  y ajouter des ascensions (voie du club, note /5, prise max, temps, assureur en nom libre),
+  confidentialité par séance (CLUB | FRIENDS | PRIVATE — A-012), historique perso + onglet
+  activité du club (séances CLUB des autres). Page `/sessions`, tests intégration + vitest.
+- **Correctif SSR** : toutes les pages de liste (fil, créneaux, voies, notifications, membres,
+  séances) étaient **vides au rechargement à froid** (le handler `useAsyncData` ne se rejoue pas
+  côté client après SSR) — corrigé en réhydratant les refs depuis la payload.
+
 ## En cours
 
-- Rien — les Phases 0 à 4 sont complètes.
+- Rien — la partie A de la Phase 5 est complète.
 
 ## Prochaines étapes (dans l'ordre de la ROADMAP)
 
-1. **Phase 5 — Séances & social** : séances + ascensions (note, prise max, temps, assureur),
-   amis, fil d'amis, confidentialité.
+1. **Phase 5B — Amis & confidentialité** : graphe d'amis (demande/acceptation), séances des
+   amis (visibilité FRIENDS effective), sélection d'un ami comme assureur.
 2. **Phase 6 — Sondages & messagerie**, puis **Phase 7 — finitions PWA** (push web, éditeur
    d'annotations de prises, itinéraire, rate limiting, RGPD, page profil).
 
 ## Points d'attention
 
-- **URLs signées** : la signature S3 inclut l'hôte → `S3_PUBLIC_ENDPOINT` doit être l'URL de
-  MinIO vue du navigateur (compose : `http://localhost:9000` par défaut).
+- **Médias** : servis par l'application (`GET /api/media/**`, authentifié, scopé par org) — plus
+  d'URLs signées ni de MinIO exposé (ADR 0006 amendé).
 - **E2e navigateur** : pas encore de Playwright (A-008) ; le chemin critique est couvert par les
   tests d'intégration API + vitest.
 - Les ports publiés sont personnalisés directement dans `docker-compose.yml` sur `main` (choix
