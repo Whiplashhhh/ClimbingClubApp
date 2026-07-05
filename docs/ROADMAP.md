@@ -53,7 +53,7 @@
 
 ## Phase 7 — Finitions PWA
 - [ ] Offline de base, notifications push web
-- [ ] Page profil (infos du compte, changement de mot de passe)
+- [x] Page profil (infos du compte, changement de mot de passe)
 - [ ] Éditeur d'annotations de prises
 - [ ] Itinéraire (deep-link maps)
 - [ ] Rate limiting (Redis) sur les endpoints sensibles

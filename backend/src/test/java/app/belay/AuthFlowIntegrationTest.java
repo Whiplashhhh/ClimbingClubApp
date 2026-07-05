@@ -144,6 +144,64 @@ class AuthFlowIntegrationTest {
     }
 
     @Test
+    void changePasswordUpdatesLoginCredentials() {
+        String tag = unique();
+        ApiActor actor = new ApiActor(port);
+        actor.post(
+                "/api/auth/register",
+                Map.of(
+                        "email",
+                        "pwd-" + tag + "@club.fr",
+                        "password",
+                        "s3cure-password",
+                        "displayName",
+                        "X",
+                        "createOrganization",
+                        Map.of("name", "Club " + tag, "climbingType", "BOULDER")),
+                JsonNode.class);
+
+        // Mauvais mot de passe actuel → 400
+        assertThat(actor.post(
+                                "/api/auth/change-password",
+                                Map.of("currentPassword", "wrong", "newPassword", "new-s3cure-pass"),
+                                JsonNode.class)
+                        .getStatusCode())
+                .isEqualTo(HttpStatus.BAD_REQUEST);
+
+        // Nouveau mot de passe trop court → 400
+        assertThat(actor.post(
+                                "/api/auth/change-password",
+                                Map.of("currentPassword", "s3cure-password", "newPassword", "short"),
+                                JsonNode.class)
+                        .getStatusCode())
+                .isEqualTo(HttpStatus.BAD_REQUEST);
+
+        // Changement valide → 204
+        assertThat(actor.post(
+                                "/api/auth/change-password",
+                                Map.of("currentPassword", "s3cure-password", "newPassword", "new-s3cure-pass"),
+                                Void.class)
+                        .getStatusCode())
+                .isEqualTo(HttpStatus.NO_CONTENT);
+
+        // L'ancien mot de passe ne fonctionne plus ; le nouveau oui
+        ApiActor fresh = new ApiActor(port);
+        assertThat(fresh.post(
+                                "/api/auth/login",
+                                Map.of("email", "pwd-" + tag + "@club.fr", "password", "s3cure-password"),
+                                JsonNode.class)
+                        .getStatusCode())
+                .isEqualTo(HttpStatus.UNAUTHORIZED);
+        assertThat(new ApiActor(port)
+                        .post(
+                                "/api/auth/login",
+                                Map.of("email", "pwd-" + tag + "@club.fr", "password", "new-s3cure-pass"),
+                                JsonNode.class)
+                        .getStatusCode())
+                .isEqualTo(HttpStatus.OK);
+    }
+
+    @Test
     void mutationsWithoutCsrfTokenAreRejected() {
         // Anonyme : la protection CSRF déclenche le point d'entrée d'authentification → 401
         ApiActor anonymous = new ApiActor(port);

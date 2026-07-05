@@ -96,6 +96,10 @@ public class AppUser {
         return passwordHash;
     }
 
+    public void setPasswordHash(String passwordHash) {
+        this.passwordHash = passwordHash;
+    }
+
     public String getDisplayName() {
         return displayName;
     }
