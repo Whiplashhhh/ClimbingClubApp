@@ -35,6 +35,9 @@
   }, {
     "name" : "members",
     "description" : "Organization members management (tenant-scoped)"
+  }, {
+    "name" : "polls",
+    "description" : "Polls sharing the feed audience model (tenant-scoped)"
   } ],
   "paths" : {
     "/api/slots/{slotId}" : {
@@ -575,6 +578,123 @@
         }
       }
     },
+    "/api/polls" : {
+      "get" : {
+        "tags" : [ "polls" ],
+        "summary" : "Polls visible to the caller (same audience rules as the feed), newest first",
+        "operationId" : "list",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/PollResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post" : {
+        "tags" : [ "polls" ],
+        "summary" : "Create a poll (ORG audience: admins; COACH_STUDENTS: coaches)",
+        "operationId" : "create_1",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/CreatePollRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "400" : {
+            "description" : "Fewer than 2 options or a blank option",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PollResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Role not allowed to publish to the requested audience",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PollResponse"
+                }
+              }
+            }
+          },
+          "201" : {
+            "description" : "Created",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PollResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/polls/{pollId}/vote" : {
+      "post" : {
+        "tags" : [ "polls" ],
+        "summary" : "Cast or change the caller's vote on a visible, open poll",
+        "operationId" : "vote",
+        "parameters" : [ {
+          "name" : "pollId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/CastVoteRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "404" : {
+            "description" : "Poll or option not found / not visible",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PollResponse"
+                }
+              }
+            }
+          },
+          "409" : {
+            "description" : "Poll is closed",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PollResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/notifications/read-all" : {
       "post" : {
         "tags" : [ "notifications" ],
@@ -911,7 +1031,7 @@
       "get" : {
         "tags" : [ "notifications" ],
         "summary" : "Latest notifications of the caller, with the unread count",
-        "operationId" : "list",
+        "operationId" : "list_1",
         "parameters" : [ {
           "name" : "page",
           "in" : "query",
@@ -1324,6 +1444,30 @@
         "responses" : {
           "404" : {
             "description" : "Post not found in the caller's organization"
+          },
+          "204" : {
+            "description" : "No Content"
+          }
+        }
+      }
+    },
+    "/api/polls/{pollId}" : {
+      "delete" : {
+        "tags" : [ "polls" ],
+        "summary" : "Delete a poll (author or admins)",
+        "operationId" : "delete_2",
+        "parameters" : [ {
+          "name" : "pollId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "404" : {
+            "description" : "Poll not found in the caller's organization"
           },
           "204" : {
             "description" : "No Content"
@@ -1861,6 +2005,110 @@
             "format" : "date-time"
           }
         }
+      },
+      "CreatePollRequest" : {
+        "type" : "object",
+        "properties" : {
+          "audience" : {
+            "type" : "string",
+            "enum" : [ "ORG", "COACH_STUDENTS" ]
+          },
+          "question" : {
+            "type" : "string",
+            "maxLength" : 300,
+            "minLength" : 0
+          },
+          "closesAt" : {
+            "type" : "string",
+            "format" : "date-time",
+            "description" : "Optional closing date; votes are refused past it"
+          },
+          "options" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string",
+              "maxLength" : 200,
+              "minLength" : 0
+            },
+            "maxItems" : 10,
+            "minItems" : 2
+          }
+        },
+        "required" : [ "audience", "options", "question" ]
+      },
+      "PollOptionResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "label" : {
+            "type" : "string"
+          },
+          "votes" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        }
+      },
+      "PollResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "authorId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "authorDisplayName" : {
+            "type" : "string"
+          },
+          "audience" : {
+            "type" : "string",
+            "enum" : [ "ORG", "COACH_STUDENTS" ]
+          },
+          "question" : {
+            "type" : "string"
+          },
+          "closesAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "closed" : {
+            "type" : "boolean"
+          },
+          "createdAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "options" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/PollOptionResponse"
+            }
+          },
+          "myOptionId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "totalVotes" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        }
+      },
+      "CastVoteRequest" : {
+        "type" : "object",
+        "properties" : {
+          "optionId" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        },
+        "required" : [ "optionId" ]
       },
       "MemberResponse" : {
         "type" : "object",

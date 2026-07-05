@@ -1,6 +1,6 @@
 # État d'avancement — Belay
 
-> Mis à jour : 2026-07-05 (Phase 5B : amis, séances d'amis, assureur membre — Phase 5 complète).
+> Mis à jour : 2026-07-05 (Phase 6A : sondages — création, vote, résultats).
 
 ## Fait (mergé dans `main`, CI verte)
 
@@ -86,14 +86,23 @@
   (flux de demande, visibilité FRIENDS, assureur membre, self/doublon 409, anti-IDOR inter-org)
   + vitest (candidats filtrés, envoi, acceptation, sélecteur d'assureur).
 
+- **Phase 6A — Sondages** : `Poll` + `PollOption` + `PollVote` (V11) réutilisant l'audience du
+  fil (ORG | COACH_STUDENTS, même prédicat de visibilité que les posts, A-014). Création selon la
+  matrice (ORG : admins ; COACH_STUDENTS : moniteurs), vote à **choix unique** remplaçable avec
+  décomptes en direct, échéance optionnelle (au-delà : 409). API `GET/POST /api/polls`,
+  `POST /api/polls/{id}/vote`, `DELETE /api/polls/{id}` (auteur/admin). Page `/polls` (composeur
+  pour admins/moniteurs, cartes avec barres de résultats et vote en ligne), entrée de nav
+  « Sondages ». Tests intégration (vote+revote+décomptes, visibilité COACH_STUDENTS via créneau,
+  fermeture 409, option inconnue 404, matrice, anti-IDOR) + vitest.
+
 ## En cours
 
-- Rien — la Phase 5 (séances & social) est complète.
+- Rien — la Phase 6A (sondages) est complète ; reste la messagerie privée (Phase 6B).
 
 ## Prochaines étapes (dans l'ordre de la ROADMAP)
 
-1. **Phase 6 — Sondages & messagerie** : polls (création / réponse / résultats, mêmes audiences
-   que le fil), messagerie privée élève ↔ moniteur.
+1. **Phase 6B — Messagerie privée** élève ↔ moniteur (fils de discussion, notifications de
+   nouveau message).
 2. **Phase 7 — finitions PWA** : offline de base + push web, page profil (changement de mot de
    passe), éditeur d'annotations de prises, itinéraire (deep-link maps), rate limiting (Redis)
    sur les endpoints sensibles, export / suppression RGPD.
