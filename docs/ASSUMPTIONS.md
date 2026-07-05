@@ -75,3 +75,15 @@ Hypothèses prises faute d'information, avec le défaut le plus raisonnable. À 
   des encadrants** (président/admin/moniteurs) — l'API était déjà protégée, on masque juste
   l'onglet. La navigation texte se limite donc à : Fil, Créneaux, Voies, Séances (+ Membres pour
   les encadrants), en `flex-wrap` pour ne jamais déborder.
+- **A-017** (2026-07-05, retours terrain) : Messagerie de **groupe** en plus des 1:1. Un fil est
+  désormais `DIRECT` (moniteur↔élève, inchangé), `SLOT` (un groupe par créneau : ses élèves + le
+  moniteur) ou `GENERAL` (un groupe par club : tous les membres actifs). Les groupes sont
+  **auto-provisionnés** et leur accès est **calculé** (appartenance au créneau / au club), pas
+  stocké par membre : un nouvel arrivant voit donc **tout l'historique** (choix produit du
+  président). « Un groupe par créneau » suffit (pas de groupe séparé « par moniteur » : chaque
+  créneau a déjà son moniteur ; un membre garde en plus un 1:1 vers chacun de ses moniteurs).
+  **Non-lus par participant** via `conversation_read` (dernière lecture par fil), remplaçant le
+  `read_at` par message. **Tout le monde écrit** dans les groupes ; une limite de débit du groupe
+  général, configurable par les admins, arrive en tranche suivante (A-018). Les **groupes ne
+  génèrent pas de notification** in-app par message (la pastille de non-lus suffit — éviter le
+  spam) ; les 1:1 continuent de notifier (`NEW_MESSAGE`).
