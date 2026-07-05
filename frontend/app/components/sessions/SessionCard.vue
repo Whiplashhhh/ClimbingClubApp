@@ -7,12 +7,15 @@ import {
   type Visibility,
 } from '~/schemas/sessions'
 import type { Route } from '~/schemas/routes'
+import type { Member } from '~/schemas/auth'
 
 const props = defineProps<{
   session: Session
   canManage: boolean
   /** Voies du club, pour le sélecteur d'ascension (propriétaire uniquement) */
   routes: Route[]
+  /** Membres du club, pour choisir l'assureur (propriétaire uniquement) */
+  members: Member[]
 }>()
 
 const emit = defineEmits<{
@@ -27,7 +30,13 @@ const routeId = ref('')
 const rating = ref('')
 const topHold = ref('')
 const durationMin = ref('')
+const belayerUserId = ref('')
 const belayerName = ref('')
+
+// Le grimpeur ne peut pas s'assurer lui-même : on retire l'auteur de la liste des assureurs.
+const belayerCandidates = computed(() =>
+  props.members.filter((m) => m.id !== props.session.userId),
+)
 
 const dateLabel = computed(() =>
   new Intl.DateTimeFormat('fr-FR', { dateStyle: 'medium', timeStyle: 'short' }).format(
@@ -37,17 +46,20 @@ const dateLabel = computed(() =>
 
 function submitAscent() {
   if (!routeId.value) return
+  // Un membre choisi prime sur le nom libre (le back rejette le nom libre dans ce cas).
   emit('addAscent', props.session.id, {
     routeId: routeId.value,
     rating: rating.value ? Number(rating.value) : undefined,
     topHold: topHold.value ? Number(topHold.value) : undefined,
     durationSeconds: durationMin.value ? Math.round(Number(durationMin.value) * 60) : undefined,
-    belayerName: belayerName.value || undefined,
+    belayerUserId: belayerUserId.value || undefined,
+    belayerName: belayerUserId.value ? undefined : belayerName.value || undefined,
   })
   routeId.value = ''
   rating.value = ''
   topHold.value = ''
   durationMin.value = ''
+  belayerUserId.value = ''
   belayerName.value = ''
   adding.value = false
 }
@@ -186,11 +198,22 @@ function submitAscent() {
             >
           </label>
         </div>
+        <select
+          v-model="belayerUserId"
+          class="rounded-md border border-gray-300 px-2 py-1.5 text-gray-700"
+          aria-label="Assureur (membre)"
+        >
+          <option value="">Assureur : membre…</option>
+          <option v-for="member in belayerCandidates" :key="member.id" :value="member.id">
+            {{ member.displayName }}
+          </option>
+        </select>
         <input
+          v-if="!belayerUserId"
           v-model="belayerName"
           type="text"
           maxlength="120"
-          placeholder="Assureur (nom)"
+          placeholder="…ou un nom libre"
           class="rounded-md border border-gray-300 px-2 py-1.5 text-gray-700"
         >
         <div class="flex justify-end gap-2">

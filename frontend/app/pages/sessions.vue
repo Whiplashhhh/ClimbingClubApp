@@ -7,6 +7,7 @@ import {
   type Visibility,
 } from '~/schemas/sessions'
 import { sectorSchema, type Route } from '~/schemas/routes'
+import { memberSchema, type Member } from '~/schemas/auth'
 
 useHead({ title: 'Séances — Belay' })
 
@@ -18,6 +19,7 @@ const tab = ref<Tab>('mine')
 const mine = ref<Session[]>([])
 const club = ref<Session[]>([])
 const routes = ref<Route[]>([])
+const members = ref<Member[]>([])
 const error = ref<string | null>(null)
 
 // Nouvelle séance
@@ -40,6 +42,9 @@ async function loadClub() {
 async function loadRoutes() {
   const sectors = z.array(sectorSchema).parse(await apiFetch<unknown>('/api/sectors'))
   routes.value = sectors.flatMap((s) => s.routes)
+}
+async function loadMembers() {
+  members.value = z.array(memberSchema).parse(await apiFetch<unknown>('/api/members'))
 }
 
 async function startSession() {
@@ -86,19 +91,20 @@ async function mutate(action: () => Promise<unknown>) {
 }
 
 async function refresh() {
-  if (auth.isActive) await Promise.all([loadMine(), loadClub(), loadRoutes()])
+  if (auth.isActive) await Promise.all([loadMine(), loadClub(), loadRoutes(), loadMembers()])
 }
 
 // Le handler ne se rejoue pas côté client après SSR : on renvoie un instantané et on
 // réhydrate les refs depuis la payload pour que la page soit remplie même au rechargement.
 const { data: initial } = await useAsyncData('sessions', async () => {
   await refresh()
-  return { mine: mine.value, club: club.value, routes: routes.value }
+  return { mine: mine.value, club: club.value, routes: routes.value, members: members.value }
 })
 if (initial.value) {
   mine.value = initial.value.mine
   club.value = initial.value.club
   routes.value = initial.value.routes
+  members.value = initial.value.members
 }
 
 useAutoRefresh(refresh)
@@ -180,6 +186,7 @@ useAutoRefresh(refresh)
           :session="session"
           :can-manage="canManage(session)"
           :routes="routes"
+          :members="members"
           @add-ascent="addAscent"
           @remove-ascent="removeAscent"
           @change-visibility="changeVisibility"

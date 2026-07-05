@@ -143,6 +143,13 @@ async function onLogout() {
             Séances
           </NuxtLink>
           <NuxtLink
+            to="/friends"
+            class="text-gray-600 hover:text-indigo-600"
+            exact-active-class="font-semibold text-indigo-600"
+          >
+            Amis
+          </NuxtLink>
+          <NuxtLink
             to="/members"
             class="text-gray-600 hover:text-indigo-600"
             exact-active-class="font-semibold text-indigo-600"
