@@ -1,10 +1,13 @@
 import { z } from 'zod'
 import type { components } from '~/types/api'
 
+export const conversationTypeSchema = z.enum(['DIRECT', 'SLOT', 'GENERAL'])
+
 export const conversationSchema = z.object({
   id: z.uuid(),
-  otherUserId: z.uuid(),
-  otherDisplayName: z.string(),
+  type: conversationTypeSchema,
+  title: z.string(),
+  otherUserId: z.uuid().optional(),
   lastMessagePreview: z.string().optional(),
   lastMessageAt: z.string(),
   unread: z.number(),
@@ -18,5 +21,6 @@ export const messageSchema = z.object({
   createdAt: z.string(),
 }) satisfies z.ZodType<components['schemas']['MessageResponse']>
 
+export type ConversationType = z.infer<typeof conversationTypeSchema>
 export type Conversation = z.infer<typeof conversationSchema>
 export type Message = z.infer<typeof messageSchema>

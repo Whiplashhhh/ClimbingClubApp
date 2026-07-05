@@ -1,6 +1,6 @@
 # État d'avancement — Belay
 
-> Mis à jour : 2026-07-05 (retours terrain n°4 : réorganisation de la navigation, sondages dans le fil).
+> Mis à jour : 2026-07-05 (retours terrain n°5A : messagerie de groupe — créneau + club).
 
 ## Fait (mergé dans `main`, CI verte)
 
@@ -111,20 +111,26 @@
   non-lus). « Membres » n'est visible que des **encadrants**. Nav resserrée en `flex-wrap`
   (A-016). Frontend uniquement ; tests vitest mis à jour (fil+sondages, layout).
 
+- **Retours terrain n°5A — messagerie de groupe** : les fils deviennent typés `DIRECT | SLOT |
+  GENERAL` (V13). Chaque membre voit un **groupe par créneau** (élèves + moniteur) et le **groupe
+  général du club**, en plus de ses 1:1 moniteur↔élève. Groupes auto-provisionnés, accès calculé
+  → **historique complet visible des nouveaux arrivants**. Non-lus par participant
+  (`conversation_read`), tout le monde écrit dans les groupes, pas de notification par message de
+  groupe (A-017). Page Messages adaptée (pastille Groupe/Club, nom de l'expéditeur dans les fils
+  de groupe). Tests intégration (1:1 + général + créneau + anti-IDOR) + vitest.
+
 ## En cours
 
-- Rien — la **Phase 6 (sondages & messagerie) est complète** ; retours terrain n°4 traités.
-- **En attente de confirmation** : refonte de la messagerie en **groupes** (par créneau + groupe
-  général du club, avec historique visible des nouveaux arrivants). Modèle proposé mais non
-  construit — voir la question ci-dessous dans les prochaines étapes.
+- Rien — la **Phase 6 est complète** ; retours n°4 et n°5A traités.
+- **Reste de retours n°5 (5B)** : limite de débit du **groupe général** configurable par les
+  admins (illimité, ou N messages par fenêtre de temps définie). Modèle décidé (A-018 à écrire),
+  pas encore construit.
 
 ## Prochaines étapes (dans l'ordre de la ROADMAP)
 
-0. **Messagerie de groupe (à confirmer)** : sur retour terrain, faire apparaître d'office des
-   groupes — un par créneau (élèves + moniteur) et un groupe général du club — en plus (ou à la
-   place) du 1:1 moniteur↔élève actuel, avec historique visible des nouveaux membres. Décisions
-   ouvertes : coexistence avec le 1:1, « par créneau » vs « par moniteur », droits d'écriture du
-   groupe général (annonces vs libre). À trancher avant de coder.
+0. **Retours n°5B — limite de débit du groupe général** : réglage d'organisation posé par un
+   admin — soit écriture illimitée, soit **N messages par membre par fenêtre T** (les deux
+   configurables) ; refus (429/409) au-delà. UI d'administration + application côté envoi.
 1. **Phase 7 — finitions PWA** : offline de base + push web, page profil (changement de mot de
    passe), éditeur d'annotations de prises, itinéraire (deep-link maps), rate limiting (Redis)
    sur les endpoints sensibles, export / suppression RGPD.

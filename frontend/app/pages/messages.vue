@@ -158,7 +158,15 @@ function timeLabel(iso: string): string {
             @click="openConversation(conv.id)"
           >
             <div class="min-w-0">
-              <p class="font-medium text-gray-900">{{ conv.otherDisplayName }}</p>
+              <p class="flex items-center gap-1.5 font-medium text-gray-900">
+                <span
+                  v-if="conv.type !== 'DIRECT'"
+                  class="shrink-0 rounded bg-indigo-50 px-1.5 py-0.5 text-[10px] font-semibold text-indigo-700"
+                >
+                  {{ conv.type === 'GENERAL' ? 'Club' : 'Groupe' }}
+                </span>
+                <span class="truncate">{{ conv.title }}</span>
+              </p>
               <p v-if="conv.lastMessagePreview" class="truncate text-sm text-gray-500">
                 {{ conv.lastMessagePreview }}
               </p>
@@ -184,7 +192,7 @@ function timeLabel(iso: string): string {
           >
             ← Retour
           </button>
-          <h2 class="text-lg font-semibold text-gray-900">{{ selected.otherDisplayName }}</h2>
+          <h2 class="text-lg font-semibold text-gray-900">{{ selected.title }}</h2>
         </div>
 
         <section class="flex flex-col gap-2" data-testid="message-thread">
@@ -199,6 +207,12 @@ function timeLabel(iso: string): string {
                 : 'self-start bg-gray-100 text-gray-800'
             "
           >
+            <p
+              v-if="selected.type !== 'DIRECT' && message.senderId !== auth.me.id"
+              class="mb-0.5 text-[10px] font-semibold text-indigo-600"
+            >
+              {{ message.senderDisplayName }}
+            </p>
             <p class="whitespace-pre-line">{{ message.body }}</p>
             <p
               class="mt-1 text-[10px]"

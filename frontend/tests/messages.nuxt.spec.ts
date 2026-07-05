@@ -26,11 +26,21 @@ const convId = '44444444-4444-4444-8444-444444444444'
 
 const conversation = {
   id: convId,
+  type: 'DIRECT',
+  title: 'Coach',
   otherUserId: coachId,
-  otherDisplayName: 'Coach',
   lastMessagePreview: 'Salut',
   lastMessageAt: '2026-07-05T10:00:00Z',
   unread: 2,
+}
+
+const generalGroup = {
+  id: '66666666-6666-4666-8666-666666666666',
+  type: 'GENERAL',
+  title: 'Tout le club',
+  lastMessagePreview: 'Bienvenue',
+  lastMessageAt: '2026-07-05T09:00:00Z',
+  unread: 0,
 }
 
 const message = {
@@ -53,7 +63,8 @@ describe('messages page', () => {
     clearNuxtData('messages')
     apiFetchMock.mockReset()
     apiFetchMock.mockImplementation(async (path: unknown, opts?: { method?: string }) => {
-      if (path === '/api/conversations' && (!opts || opts.method !== 'POST')) return [conversation]
+      if (path === '/api/conversations' && (!opts || opts.method !== 'POST'))
+        return [conversation, generalGroup]
       if (path === '/api/members')
         return [
           { id: me.id, displayName: 'Member', role: 'MEMBER' },
@@ -64,7 +75,7 @@ describe('messages page', () => {
     })
   })
 
-  it('lists conversations with an unread badge and no open thread', async () => {
+  it('lists direct and group conversations with an unread badge and no open thread', async () => {
     const auth = useAuthStore()
     auth.me = me
     auth.initialized = true
@@ -72,7 +83,8 @@ describe('messages page', () => {
     wrapper = await mountSuspended(MessagesPage)
     expect(wrapper.find('[data-testid="conversation-list"]').exists()).toBe(true)
     expect(wrapper.find('[data-testid="message-thread"]').exists()).toBe(false)
-    expect(wrapper.text()).toContain('Coach')
+    expect(wrapper.text()).toContain('Coach') // fil 1:1
+    expect(wrapper.text()).toContain('Tout le club') // groupe général
     expect(wrapper.find('[data-testid="unread-badge"]').text()).toBe('2')
   })
 

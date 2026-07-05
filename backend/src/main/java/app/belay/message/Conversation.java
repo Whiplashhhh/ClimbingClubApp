@@ -1,9 +1,12 @@
 package app.belay.message;
 
 import app.belay.organization.Organization;
+import app.belay.slot.Slot;
 import app.belay.user.AppUser;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -16,8 +19,10 @@ import java.time.Instant;
 import java.util.UUID;
 
 /**
- * Fil de discussion privé entre un moniteur et l'un de ses élèves (relation dérivée d'un créneau,
- * A-005). Un seul fil par paire ; {@code lastMessageAt} porte le tri par activité récente.
+ * Fil de discussion. Trois formes ({@link ConversationType}) : DIRECT (paire moniteur/élève),
+ * SLOT (groupe d'un créneau) et GENERAL (groupe du club). Pour les groupes, l'accès est *calculé*
+ * (appartenance au créneau / au club), pas stocké : un nouvel arrivant voit tout l'historique.
+ * {@code lastMessageAt} porte le tri par activité récente.
  */
 @Entity
 @Table(name = "conversation")
@@ -31,13 +36,23 @@ public class Conversation {
     @JoinColumn(name = "organization_id", nullable = false)
     private Organization organization;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "coach_id", nullable = false)
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    private ConversationType type;
+
+    // DIRECT : moniteur et élève. Null pour les groupes.
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "coach_id")
     private AppUser coach;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "student_id", nullable = false)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "student_id")
     private AppUser student;
+
+    // SLOT : le créneau associé. Null sinon.
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "slot_id")
+    private Slot slot;
 
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
@@ -47,10 +62,26 @@ public class Conversation {
 
     protected Conversation() {}
 
-    public Conversation(Organization organization, AppUser coach, AppUser student) {
+    private Conversation(Organization organization, ConversationType type) {
         this.organization = organization;
-        this.coach = coach;
-        this.student = student;
+        this.type = type;
+    }
+
+    public static Conversation direct(Organization organization, AppUser coach, AppUser student) {
+        Conversation c = new Conversation(organization, ConversationType.DIRECT);
+        c.coach = coach;
+        c.student = student;
+        return c;
+    }
+
+    public static Conversation forSlot(Organization organization, Slot slot) {
+        Conversation c = new Conversation(organization, ConversationType.SLOT);
+        c.slot = slot;
+        return c;
+    }
+
+    public static Conversation general(Organization organization) {
+        return new Conversation(organization, ConversationType.GENERAL);
     }
 
     @PrePersist
@@ -63,13 +94,9 @@ public class Conversation {
         this.lastMessageAt = at;
     }
 
-    /** L'autre participant du fil, du point de vue de {@code userId}. */
-    public AppUser other(UUID userId) {
+    /** L'autre participant d'un fil DIRECT, du point de vue de {@code userId}. */
+    public AppUser directOther(UUID userId) {
         return coach.getId().equals(userId) ? student : coach;
-    }
-
-    public boolean involves(UUID userId) {
-        return coach.getId().equals(userId) || student.getId().equals(userId);
     }
 
     public UUID getId() {
@@ -80,12 +107,20 @@ public class Conversation {
         return organization;
     }
 
+    public ConversationType getType() {
+        return type;
+    }
+
     public AppUser getCoach() {
         return coach;
     }
 
     public AppUser getStudent() {
         return student;
+    }
+
+    public Slot getSlot() {
+        return slot;
     }
 
     public Instant getLastMessageAt() {
