@@ -4,6 +4,7 @@ import app.belay.auth.dto.ChangePasswordRequest;
 import app.belay.auth.dto.LoginRequest;
 import app.belay.auth.dto.MeResponse;
 import app.belay.auth.dto.RegisterRequest;
+import app.belay.auth.dto.UpdateProfileRequest;
 import app.belay.common.NotFoundException;
 import app.belay.user.AppUser;
 import app.belay.user.UserRepository;
@@ -23,6 +24,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.context.SecurityContextRepository;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -106,6 +108,17 @@ public class AuthController {
     public void changePassword(
             @AuthenticationPrincipal UserPrincipal principal, @Valid @RequestBody ChangePasswordRequest body) {
         authService.changePassword(principal.id(), body.currentPassword(), body.newPassword());
+    }
+
+    @PatchMapping("/profile")
+    @Transactional
+    @Operation(summary = "Update the current user's display name and/or email (confirmed by current password)")
+    @ApiResponse(responseCode = "400", description = "Current password is incorrect")
+    @ApiResponse(responseCode = "409", description = "Email already registered")
+    public MeResponse updateProfile(
+            @AuthenticationPrincipal UserPrincipal principal, @Valid @RequestBody UpdateProfileRequest body) {
+        return MeResponse.from(
+                authService.updateProfile(principal.id(), body.displayName(), body.email(), body.currentPassword()));
     }
 
     private AppUser loadUser(UserPrincipal principal) {

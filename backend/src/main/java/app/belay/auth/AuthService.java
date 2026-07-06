@@ -78,6 +78,26 @@ public class AuthService {
         user.setPasswordHash(passwordEncoder.encode(newPassword));
     }
 
+    /** Met à jour nom affiché et/ou email (confirmé par le mot de passe actuel). Email unique global. */
+    @Transactional
+    public AppUser updateProfile(UUID userId, String displayName, String email, String currentPassword) {
+        AppUser user = userRepository.findById(userId).orElseThrow(() -> new NotFoundException("User not found"));
+        if (!passwordEncoder.matches(currentPassword, user.getPasswordHash())) {
+            throw new IllegalArgumentException("Current password is incorrect");
+        }
+        if (displayName != null && !displayName.isBlank()) {
+            user.setDisplayName(displayName.trim());
+        }
+        if (email != null && !email.isBlank()) {
+            String normalized = email.trim().toLowerCase(Locale.ROOT);
+            if (!normalized.equals(user.getEmail()) && userRepository.existsByEmailIgnoreCase(normalized)) {
+                throw new ConflictException("Email already registered");
+            }
+            user.setEmail(normalized);
+        }
+        return user;
+    }
+
     private String generateSlug(String name) {
         String base = Normalizer.normalize(name, Normalizer.Form.NFD)
                 .replaceAll("\\p{M}", "")

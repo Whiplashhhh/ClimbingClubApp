@@ -10,6 +10,55 @@ const roleLabels: Record<string, string> = {
   MEMBER: 'Membre',
 }
 
+// Édition des infos (nom + email)
+const editName = ref('')
+const editEmail = ref('')
+const editPassword = ref('')
+const editError = ref<string | null>(null)
+const editSuccess = ref(false)
+const editSubmitting = ref(false)
+
+watch(
+  () => auth.me,
+  (me) => {
+    if (me) {
+      editName.value = me.displayName
+      editEmail.value = me.email
+    }
+  },
+  { immediate: true },
+)
+
+const canSaveInfo = computed(
+  () => editPassword.value.length > 0 && (editName.value.trim().length > 0 || editEmail.value.trim().length > 0),
+)
+
+async function saveInfo() {
+  if (!canSaveInfo.value) return
+  editError.value = null
+  editSuccess.value = false
+  editSubmitting.value = true
+  try {
+    await apiFetch('/api/auth/profile', {
+      method: 'PATCH',
+      body: {
+        displayName: editName.value.trim() || undefined,
+        email: editEmail.value.trim() || undefined,
+        currentPassword: editPassword.value,
+      },
+    })
+    await auth.fetchMe()
+    editPassword.value = ''
+    editSuccess.value = true
+  } catch (e: unknown) {
+    const status = (e as { statusCode?: number }).statusCode
+    editError.value =
+      status === 409 ? 'Cet email est déjà utilisé.' : 'Échec : vérifiez votre mot de passe actuel.'
+  } finally {
+    editSubmitting.value = false
+  }
+}
+
 const currentPassword = ref('')
 const newPassword = ref('')
 const confirmPassword = ref('')
@@ -51,10 +100,6 @@ async function changePassword() {
     <section class="rounded-lg border border-gray-200 bg-white p-4">
       <h1 class="mb-3 text-lg font-semibold text-gray-900">Mon profil</h1>
       <dl class="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm">
-        <dt class="text-gray-500">Nom</dt>
-        <dd class="text-gray-900">{{ auth.me.displayName }}</dd>
-        <dt class="text-gray-500">Email</dt>
-        <dd class="text-gray-900">{{ auth.me.email }}</dd>
         <dt class="text-gray-500">Rôle</dt>
         <dd class="text-gray-900">{{ roleLabels[auth.me.role] ?? auth.me.role }}</dd>
         <dt class="text-gray-500">Club</dt>
@@ -66,6 +111,50 @@ async function changePassword() {
         </dd>
       </dl>
     </section>
+
+    <form
+      class="flex flex-col gap-3 rounded-lg border border-gray-200 bg-white p-4"
+      data-testid="edit-info"
+      @submit.prevent="saveInfo"
+    >
+      <h2 class="text-lg font-semibold text-gray-900">Mes informations</h2>
+      <label class="flex flex-col gap-1 text-sm text-gray-600">
+        Nom affiché
+        <input
+          v-model="editName"
+          type="text"
+          maxlength="120"
+          class="rounded-md border border-gray-300 px-3 py-2 focus:border-indigo-500 focus:outline-none"
+        >
+      </label>
+      <label class="flex flex-col gap-1 text-sm text-gray-600">
+        Email
+        <input
+          v-model="editEmail"
+          type="email"
+          autocomplete="email"
+          class="rounded-md border border-gray-300 px-3 py-2 focus:border-indigo-500 focus:outline-none"
+        >
+      </label>
+      <label class="flex flex-col gap-1 text-sm text-gray-600">
+        Mot de passe actuel (pour confirmer)
+        <input
+          v-model="editPassword"
+          type="password"
+          autocomplete="current-password"
+          class="rounded-md border border-gray-300 px-3 py-2 focus:border-indigo-500 focus:outline-none"
+        >
+      </label>
+      <p v-if="editError" class="text-sm text-red-600">{{ editError }}</p>
+      <p v-if="editSuccess" class="text-sm text-green-600">Informations mises à jour ✓</p>
+      <button
+        type="submit"
+        :disabled="editSubmitting || !canSaveInfo"
+        class="self-end rounded-md bg-indigo-600 px-4 py-2 text-sm text-white hover:bg-indigo-700 disabled:opacity-50"
+      >
+        {{ editSubmitting ? 'Enregistrement…' : 'Enregistrer' }}
+      </button>
+    </form>
 
     <form
       class="flex flex-col gap-3 rounded-lg border border-gray-200 bg-white p-4"

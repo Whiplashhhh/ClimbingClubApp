@@ -1216,6 +1216,45 @@
         }
       }
     },
+    "/api/auth/profile" : {
+      "patch" : {
+        "tags" : [ "auth" ],
+        "summary" : "Update the current user's display name and/or email (confirmed by current password)",
+        "operationId" : "updateProfile",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/UpdateProfileRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "400" : {
+            "description" : "Current password is incorrect",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/MeResponse"
+                }
+              }
+            }
+          },
+          "409" : {
+            "description" : "Email already registered",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/MeResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/sessions/mine" : {
       "get" : {
         "tags" : [ "sessions" ],
@@ -2628,6 +2667,27 @@
           }
         },
         "required" : [ "role" ]
+      },
+      "UpdateProfileRequest" : {
+        "type" : "object",
+        "properties" : {
+          "displayName" : {
+            "type" : "string",
+            "maxLength" : 120,
+            "minLength" : 0
+          },
+          "email" : {
+            "type" : "string",
+            "format" : "email",
+            "maxLength" : 255,
+            "minLength" : 0
+          },
+          "currentPassword" : {
+            "type" : "string",
+            "minLength" : 1
+          }
+        },
+        "required" : [ "currentPassword" ]
       },
       "NotificationPageResponse" : {
         "type" : "object",

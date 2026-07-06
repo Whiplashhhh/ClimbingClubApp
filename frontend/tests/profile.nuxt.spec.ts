@@ -34,17 +34,37 @@ describe('profile page', () => {
     wrapper = undefined
   })
 
-  it('shows account info and disables submit until the form is valid', async () => {
+  it('prefills the edit form and shows role/club info', async () => {
     const auth = useAuthStore()
     auth.me = me
     auth.initialized = true
 
     wrapper = await mountSuspended(ProfilePage)
-    expect(wrapper.text()).toContain('grimpeur@club.fr')
     expect(wrapper.text()).toContain('Membre')
+    // Le formulaire d'infos est pré-rempli avec le nom et l'email courants
+    const editInputs = wrapper.findAll('[data-testid="edit-info"] input')
+    expect((editInputs[0]!.element as HTMLInputElement).value).toBe('Grimpeur')
+    expect((editInputs[1]!.element as HTMLInputElement).value).toBe('grimpeur@club.fr')
 
     const submit = wrapper.find('[data-testid="change-password"] button[type="submit"]')
     expect(submit.attributes('disabled')).toBeDefined()
+  })
+
+  it('patches the profile when info is saved with the current password', async () => {
+    const auth = useAuthStore()
+    auth.me = me
+    auth.initialized = true
+
+    wrapper = await mountSuspended(ProfilePage)
+    const editInputs = wrapper.findAll('[data-testid="edit-info"] input')
+    await editInputs[0]!.setValue('Nouveau Nom')
+    await editInputs[2]!.setValue('current-password')
+    await wrapper.find('[data-testid="edit-info"]').trigger('submit')
+
+    expect(apiFetchMock).toHaveBeenCalledWith('/api/auth/profile', {
+      method: 'PATCH',
+      body: { displayName: 'Nouveau Nom', email: 'grimpeur@club.fr', currentPassword: 'current-password' },
+    })
   })
 
   it('submits a password change when the form is valid', async () => {
