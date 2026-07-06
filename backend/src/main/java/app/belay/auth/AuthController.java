@@ -38,16 +38,19 @@ public class AuthController {
     private final AuthenticationManager authenticationManager;
     private final SecurityContextRepository securityContextRepository;
     private final UserRepository userRepository;
+    private final AuthRateLimiter rateLimiter;
 
     public AuthController(
             AuthService authService,
             AuthenticationManager authenticationManager,
             SecurityContextRepository securityContextRepository,
-            UserRepository userRepository) {
+            UserRepository userRepository,
+            AuthRateLimiter rateLimiter) {
         this.authService = authService;
         this.authenticationManager = authenticationManager;
         this.securityContextRepository = securityContextRepository;
         this.userRepository = userRepository;
+        this.rateLimiter = rateLimiter;
     }
 
     @PostMapping("/register")
@@ -58,6 +61,7 @@ public class AuthController {
     @ApiResponse(responseCode = "409", description = "Email already registered")
     public MeResponse register(
             @Valid @RequestBody RegisterRequest body, HttpServletRequest request, HttpServletResponse response) {
+        rateLimiter.recordAndCheckRegister(request.getRemoteAddr());
         AppUser user = authService.register(body);
         establishSession(body.email(), body.password(), request, response);
         return MeResponse.from(user);
@@ -70,8 +74,15 @@ public class AuthController {
     @Transactional(readOnly = true)
     public MeResponse login(
             @Valid @RequestBody LoginRequest body, HttpServletRequest request, HttpServletResponse response) {
-        UserPrincipal principal = establishSession(body.email(), body.password(), request, response);
-        return MeResponse.from(loadUser(principal));
+        rateLimiter.assertLoginAllowed(body.email());
+        try {
+            UserPrincipal principal = establishSession(body.email(), body.password(), request, response);
+            rateLimiter.resetLogin(body.email());
+            return MeResponse.from(loadUser(principal));
+        } catch (org.springframework.security.core.AuthenticationException e) {
+            rateLimiter.recordLoginFailure(body.email());
+            throw e;
+        }
     }
 
     @GetMapping("/csrf")

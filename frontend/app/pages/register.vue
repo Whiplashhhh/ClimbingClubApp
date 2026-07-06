@@ -32,6 +32,7 @@ async function onSubmit() {
     const status = (e as { statusCode?: number }).statusCode
     if (status === 409) error.value = 'Cet email est déjà utilisé.'
     else if (status === 404) error.value = 'Aucun club ne correspond à ce code.'
+    else if (status === 429) error.value = 'Trop de tentatives. Réessayez plus tard.'
     else error.value = "L'inscription a échoué. Vérifiez les champs saisis."
   } finally {
     loading.value = false

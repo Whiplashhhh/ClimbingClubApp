@@ -131,10 +131,16 @@
   compte + formulaire de changement de mot de passe avec confirmation), accessible depuis le menu
   avatar (« Mon profil »). Tests intégration (401/204 login après changement) + vitest.
 
+- **Sécurité comptes (lot validé)** : politique de mot de passe `@StrongPassword` (A-019) et
+  **rate limiting anti brute-force** (A-020) — connexion limitée par email, inscription par IP
+  (bouclage ignoré ; X-Forwarded-For honoré en prod), 429 au-delà, seuils via `RATELIMIT_*`.
+
 ## En cours
 
-- **Phase 7 en cours** : profil + mot de passe livrés (7A). Reste : push web, éditeur de prises,
-  itinéraire maps, rate limiting login, RGPD.
+- **Phase 7 / lot comptes en cours.** Fait : profil + mot de passe (7A), politique MDP (A1),
+  rate limiting (A2). Suite du lot : édition profil (nom/email), photo de profil, export RGPD,
+  transfert de propriété + suppression de compte, puis connexion Google/Apple (nécessite des
+  identifiants fournis par l'utilisateur).
 
 ## Prochaines étapes (dans l'ordre de la ROADMAP)
 

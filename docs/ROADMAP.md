@@ -56,5 +56,5 @@
 - [x] Page profil (infos du compte, changement de mot de passe)
 - [ ] Éditeur d'annotations de prises
 - [ ] Itinéraire (deep-link maps)
-- [ ] Rate limiting (Redis) sur les endpoints sensibles
+- [x] Rate limiting (Redis) sur les endpoints sensibles (login par email, inscription par IP — 429)
 - [ ] Export / suppression RGPD

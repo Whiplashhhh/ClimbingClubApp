@@ -99,3 +99,11 @@ Hypothèses prises faute d'information, avec le défaut le plus raisonnable. À 
   chiffre, caractère spécial), plus rejet d'une petite liste de mots de passe évidents. Validée
   côté back (source de vérité) et reflétée côté front par un indicateur de règles. Le back reste
   borné à 72 caractères (limite bcrypt).
+- **A-020** (2026-07-06) : Rate limiting anti brute-force (Redis, fenêtre fixe). **Connexion**
+  limitée par **email** (échecs) : au-delà de `login-max` échecs dans `login-window`, la connexion
+  renvoie **429** (réinitialisé au succès). **Inscription** limitée par **IP cliente** :
+  au-delà de `register-max` dans `register-window`, **429**. L'IP de bouclage (127.0.0.1/::1) est
+  **ignorée** (health-checks, appels locaux, suite de tests) ; en production l'app tourne derrière
+  un reverse proxy et `server.forward-headers-strategy=framework` fait remonter l'IP réelle via
+  `X-Forwarded-For`. Valeurs par défaut : 5 échecs / 15 min (login), 5 inscriptions / 1 h (IP),
+  surchargeables par variables d'environnement (`RATELIMIT_*`).

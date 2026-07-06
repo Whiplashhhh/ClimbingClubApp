@@ -35,9 +35,18 @@ belay:
     secret-key: ${S3_SECRET_KEY:minioadmin}
     bucket: ${S3_BUCKET:belay-media}
     region: ${S3_REGION:us-east-1}
+  ratelimit:
+    # Anti brute-force : N échecs de connexion par email, N inscriptions par IP (fenêtre en s).
+    login-max: ${RATELIMIT_LOGIN_MAX:5}
+    login-window-seconds: ${RATELIMIT_LOGIN_WINDOW:900}
+    register-max: ${RATELIMIT_REGISTER_MAX:5}
+    register-window-seconds: ${RATELIMIT_REGISTER_WINDOW:3600}
 
 server:
   port: 8080
+  # L'app tourne derrière un reverse proxy (Tailscale/nginx) : honore X-Forwarded-For pour
+  # obtenir l'IP réelle du client (rate limiting des inscriptions).
+  forward-headers-strategy: framework
   servlet:
     session:
       cookie:

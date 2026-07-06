@@ -13,8 +13,12 @@ async function onSubmit() {
   try {
     await auth.login(email.value, password.value)
     await navigateTo('/')
-  } catch {
-    error.value = 'Email ou mot de passe incorrect.'
+  } catch (e: unknown) {
+    const status = (e as { statusCode?: number }).statusCode
+    error.value =
+      status === 429
+        ? 'Trop de tentatives. Réessayez dans quelques minutes.'
+        : 'Email ou mot de passe incorrect.'
   } finally {
     loading.value = false
   }
