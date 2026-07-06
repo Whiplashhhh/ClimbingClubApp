@@ -8,7 +8,13 @@ import app.belay.user.UserStatus;
 import java.util.UUID;
 
 public record MeResponse(
-        UUID id, String email, String displayName, Role role, UserStatus status, OrganizationSummary organization) {
+        UUID id,
+        String email,
+        String displayName,
+        String avatarUrl,
+        Role role,
+        UserStatus status,
+        OrganizationSummary organization) {
 
     public record OrganizationSummary(UUID id, String name, String slug, ClimbingType climbingType) {
 
@@ -21,11 +27,12 @@ public record MeResponse(
         }
     }
 
-    public static MeResponse from(AppUser user) {
+    public static MeResponse from(AppUser user, String avatarUrl) {
         return new MeResponse(
                 user.getId(),
                 user.getEmail(),
                 user.getDisplayName(),
+                avatarUrl,
                 user.getRole(),
                 user.getStatus(),
                 OrganizationSummary.from(user.getOrganization()));

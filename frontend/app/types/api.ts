@@ -370,6 +370,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/auth/avatar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Upload the current user's profile photo (JPEG/PNG/WebP, content-sniffed, max 5 MB) */
+        post: operations["uploadAvatar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/sessions/{sessionId}": {
         parameters: {
             query?: never;
@@ -1043,6 +1060,7 @@ export interface components {
             /** Format: uuid */
             id?: string;
             displayName?: string;
+            avatarUrl?: string;
             /** @enum {string} */
             role?: "OWNER" | "ADMIN" | "COACH" | "MEMBER";
         };
@@ -1102,6 +1120,7 @@ export interface components {
             id?: string;
             email?: string;
             displayName?: string;
+            avatarUrl?: string;
             /** @enum {string} */
             role?: "OWNER" | "ADMIN" | "COACH" | "MEMBER";
             /** @enum {string} */
@@ -2072,6 +2091,33 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    uploadAvatar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "multipart/form-data": {
+                    /** Format: binary */
+                    image: string;
+                };
+            };
+        };
+        responses: {
+            /** @description The file is not a supported image */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["MeResponse"];
+                };
             };
         };
     };

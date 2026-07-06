@@ -4,6 +4,8 @@ import app.belay.auth.UserPrincipal;
 import app.belay.member.dto.MemberResponse;
 import app.belay.member.dto.PendingMemberResponse;
 import app.belay.member.dto.UpdateRoleRequest;
+import app.belay.storage.StorageService;
+import app.belay.user.AppUser;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -26,16 +28,22 @@ import org.springframework.web.bind.annotation.RestController;
 public class MemberController {
 
     private final MemberService memberService;
+    private final StorageService storageService;
 
-    public MemberController(MemberService memberService) {
+    public MemberController(MemberService memberService, StorageService storageService) {
         this.memberService = memberService;
+        this.storageService = storageService;
+    }
+
+    private MemberResponse toMember(AppUser user) {
+        return MemberResponse.from(user, storageService.publicUrlOrNull(user.getAvatarObjectKey()));
     }
 
     @GetMapping
     @Operation(summary = "List active members of the caller's organization")
     public List<MemberResponse> listMembers(@AuthenticationPrincipal UserPrincipal principal) {
         return memberService.listActiveMembers(principal.organizationId()).stream()
-                .map(MemberResponse::from)
+                .map(this::toMember)
                 .toList();
     }
 
@@ -54,7 +62,7 @@ public class MemberController {
     @ApiResponse(responseCode = "404", description = "Member not found in the caller's organization")
     @ApiResponse(responseCode = "409", description = "Member is not pending")
     public MemberResponse approve(@AuthenticationPrincipal UserPrincipal principal, @PathVariable UUID memberId) {
-        return MemberResponse.from(memberService.approve(principal.organizationId(), memberId));
+        return toMember(memberService.approve(principal.organizationId(), memberId));
     }
 
     @PatchMapping("/{memberId}/role")
@@ -65,7 +73,6 @@ public class MemberController {
             @AuthenticationPrincipal UserPrincipal principal,
             @PathVariable UUID memberId,
             @Valid @RequestBody UpdateRoleRequest body) {
-        return MemberResponse.from(
-                memberService.changeRole(principal.organizationId(), principal.id(), memberId, body.role()));
+        return toMember(memberService.changeRole(principal.organizationId(), principal.id(), memberId, body.role()));
     }
 }

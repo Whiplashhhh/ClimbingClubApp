@@ -10,6 +10,38 @@ const roleLabels: Record<string, string> = {
   MEMBER: 'Membre',
 }
 
+// Photo de profil
+const avatarError = ref<string | null>(null)
+const avatarUploading = ref(false)
+const avatarInput = ref<HTMLInputElement | null>(null)
+
+const avatarInitials = computed(() => {
+  const parts = (auth.me?.displayName ?? '').trim().split(/\s+/)
+  return parts
+    .slice(0, 2)
+    .map((p) => p.charAt(0).toUpperCase())
+    .join('')
+})
+
+async function uploadAvatar(event: Event) {
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0]
+  if (!file) return
+  avatarError.value = null
+  avatarUploading.value = true
+  try {
+    const form = new FormData()
+    form.append('image', file)
+    await apiFetch('/api/auth/avatar', { method: 'POST', body: form })
+    await auth.fetchMe()
+  } catch {
+    avatarError.value = 'Envoi de la photo échoué (JPEG/PNG/WebP, 5 Mo max).'
+  } finally {
+    avatarUploading.value = false
+    if (avatarInput.value) avatarInput.value.value = ''
+  }
+}
+
 // Édition des infos (nom + email)
 const editName = ref('')
 const editEmail = ref('')
@@ -99,6 +131,35 @@ async function changePassword() {
   <div v-if="auth.me" class="flex flex-col gap-6">
     <section class="rounded-lg border border-gray-200 bg-white p-4">
       <h1 class="mb-3 text-lg font-semibold text-gray-900">Mon profil</h1>
+      <div class="mb-4 flex items-center gap-4">
+        <div
+          class="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-full bg-indigo-600 text-lg font-semibold text-white"
+        >
+          <img
+            v-if="auth.me.avatarUrl"
+            :src="auth.me.avatarUrl"
+            alt="Photo de profil"
+            class="h-full w-full object-cover"
+          >
+          <span v-else>{{ avatarInitials }}</span>
+        </div>
+        <div class="flex flex-col gap-1">
+          <label
+            class="cursor-pointer self-start rounded-md border border-gray-300 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50"
+          >
+            {{ avatarUploading ? 'Envoi…' : 'Changer la photo' }}
+            <input
+              ref="avatarInput"
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              class="hidden"
+              data-testid="avatar-input"
+              @change="uploadAvatar"
+            >
+          </label>
+          <p v-if="avatarError" class="text-sm text-red-600">{{ avatarError }}</p>
+        </div>
+      </div>
       <dl class="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm">
         <dt class="text-gray-500">Rôle</dt>
         <dd class="text-gray-900">{{ roleLabels[auth.me.role] ?? auth.me.role }}</dd>

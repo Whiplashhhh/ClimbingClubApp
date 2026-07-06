@@ -69,6 +69,11 @@ public class StorageService {
         return MEDIA_URL_PREFIX + objectKey;
     }
 
+    /** URL de lecture, ou {@code null} si aucune clé (ex. avatar absent). */
+    public String publicUrlOrNull(String objectKey) {
+        return objectKey == null ? null : publicUrl(objectKey);
+    }
+
     public StoredMedia fetch(String objectKey) {
         try {
             ResponseBytes<GetObjectResponse> bytes = s3Client.getObjectAsBytes(GetObjectRequest.builder()
