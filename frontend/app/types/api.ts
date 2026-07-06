@@ -423,6 +423,23 @@ export interface paths {
         patch: operations["changeRole"];
         trace?: never;
     };
+    "/api/auth/profile": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update the current user's display name and/or email (confirmed by current password) */
+        patch: operations["updateProfile"];
+        trace?: never;
+    };
     "/api/sessions/mine": {
         parameters: {
             query?: never;
@@ -1135,6 +1152,12 @@ export interface components {
         UpdateRoleRequest: {
             /** @enum {string} */
             role: "OWNER" | "ADMIN" | "COACH" | "MEMBER";
+        };
+        UpdateProfileRequest: {
+            displayName?: string;
+            /** Format: email */
+            email?: string;
+            currentPassword: string;
         };
         NotificationPageResponse: {
             items?: components["schemas"]["NotificationResponse"][];
@@ -2180,6 +2203,39 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["MemberResponse"];
+                };
+            };
+        };
+    };
+    updateProfile: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateProfileRequest"];
+            };
+        };
+        responses: {
+            /** @description Current password is incorrect */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["MeResponse"];
+                };
+            };
+            /** @description Email already registered */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["MeResponse"];
                 };
             };
         };

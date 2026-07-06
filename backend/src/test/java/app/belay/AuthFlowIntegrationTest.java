@@ -210,6 +210,78 @@ class AuthFlowIntegrationTest {
     }
 
     @Test
+    void updateProfileChangesNameAndEmail() {
+        String tag = unique();
+        ApiActor actor = new ApiActor(port);
+        actor.post(
+                "/api/auth/register",
+                Map.of(
+                        "email",
+                        "orig-" + tag + "@club.fr",
+                        "password",
+                        "s3cure-password",
+                        "displayName",
+                        "Ancien Nom",
+                        "createOrganization",
+                        Map.of("name", "Club " + tag, "climbingType", "BOULDER")),
+                JsonNode.class);
+
+        // Mauvais mot de passe actuel → 400
+        assertThat(actor.patch(
+                                "/api/auth/profile",
+                                Map.of("displayName", "Nouveau", "currentPassword", "wrong"),
+                                JsonNode.class)
+                        .getStatusCode())
+                .isEqualTo(HttpStatus.BAD_REQUEST);
+
+        // Changement valide du nom et de l'email
+        String newEmail = "nouveau-" + tag + "@club.fr";
+        ResponseEntity<JsonNode> updated = actor.patch(
+                "/api/auth/profile",
+                Map.of("displayName", "Nouveau Nom", "email", newEmail, "currentPassword", "s3cure-password"),
+                JsonNode.class);
+        assertThat(updated.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(updated.getBody().path("displayName").asText()).isEqualTo("Nouveau Nom");
+        assertThat(updated.getBody().path("email").asText()).isEqualTo(newEmail);
+        assertThat(actor.get("/api/auth/me", JsonNode.class)
+                        .getBody()
+                        .path("email")
+                        .asText())
+                .isEqualTo(newEmail);
+
+        // L'email d'un autre membre ne peut pas être réutilisé → 409
+        ApiActor other = new ApiActor(port);
+        String takenEmail = "taken-" + tag + "@club.fr";
+        other.post(
+                "/api/auth/register",
+                Map.of(
+                        "email",
+                        takenEmail,
+                        "password",
+                        "s3cure-password",
+                        "displayName",
+                        "Autre",
+                        "createOrganization",
+                        Map.of("name", "Autre club " + tag, "climbingType", "ROPES")),
+                JsonNode.class);
+        assertThat(actor.patch(
+                                "/api/auth/profile",
+                                Map.of("email", takenEmail, "currentPassword", "s3cure-password"),
+                                JsonNode.class)
+                        .getStatusCode())
+                .isEqualTo(HttpStatus.CONFLICT);
+
+        // La connexion fonctionne avec le nouvel email
+        assertThat(new ApiActor(port)
+                        .post(
+                                "/api/auth/login",
+                                Map.of("email", newEmail, "password", "s3cure-password"),
+                                JsonNode.class)
+                        .getStatusCode())
+                .isEqualTo(HttpStatus.OK);
+    }
+
+    @Test
     void repeatedFailedLoginsAreRateLimited() {
         String tag = unique();
         String email = "brute-" + tag + "@club.fr";
