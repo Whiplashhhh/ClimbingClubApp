@@ -48,6 +48,18 @@ public class ApiActor {
         return exchange(HttpMethod.POST, path, body, type, null);
     }
 
+    /** POST en simulant une IP cliente (X-Forwarded-For) — pour tester le rate limiting. */
+    public <T> ResponseEntity<T> postWithForwardedFor(String path, Object body, String forwardedFor, Class<T> type) {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        String token = csrfToken();
+        if (token != null) {
+            headers.set("X-XSRF-TOKEN", token);
+        }
+        headers.set("X-Forwarded-For", forwardedFor);
+        return rest.exchange(baseUrl + path, HttpMethod.POST, new HttpEntity<>(body, headers), type);
+    }
+
     public <T> ResponseEntity<T> patch(String path, Object body, Class<T> type) {
         return exchange(HttpMethod.PATCH, path, body, type, csrfToken());
     }

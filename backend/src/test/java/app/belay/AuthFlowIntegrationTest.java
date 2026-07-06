@@ -210,6 +210,71 @@ class AuthFlowIntegrationTest {
     }
 
     @Test
+    void repeatedFailedLoginsAreRateLimited() {
+        String tag = unique();
+        String email = "brute-" + tag + "@club.fr";
+        ApiActor actor = new ApiActor(port);
+        actor.post(
+                "/api/auth/register",
+                Map.of(
+                        "email",
+                        email,
+                        "password",
+                        "s3cure-password",
+                        "displayName",
+                        "X",
+                        "createOrganization",
+                        Map.of("name", "Club " + tag, "climbingType", "BOULDER")),
+                JsonNode.class);
+
+        // 5 échecs autorisés (mauvais mot de passe → 401), le 6e est bloqué (429)
+        for (int i = 0; i < 5; i++) {
+            assertThat(actor.post(
+                                    "/api/auth/login",
+                                    Map.of("email", email, "password", "wrong-password"),
+                                    JsonNode.class)
+                            .getStatusCode())
+                    .isEqualTo(HttpStatus.UNAUTHORIZED);
+        }
+        assertThat(actor.post("/api/auth/login", Map.of("email", email, "password", "wrong-password"), JsonNode.class)
+                        .getStatusCode())
+                .isEqualTo(HttpStatus.TOO_MANY_REQUESTS);
+    }
+
+    @Test
+    void repeatedRegistrationsFromSameIpAreRateLimited() {
+        String tag = unique();
+        String ip = "203.0.113." + (Math.abs(tag.hashCode()) % 200 + 10);
+        ApiActor actor = new ApiActor(port);
+
+        // 5 inscriptions autorisées depuis cette IP, la 6e est bloquée (429)
+        for (int i = 0; i < 5; i++) {
+            assertThat(register(actor, "signup-" + tag + "-" + i + "@club.fr", "Club " + tag + i, ip)
+                            .getStatusCode())
+                    .isEqualTo(HttpStatus.CREATED);
+        }
+        assertThat(register(actor, "signup-" + tag + "-x@club.fr", "Club " + tag + "x", ip)
+                        .getStatusCode())
+                .isEqualTo(HttpStatus.TOO_MANY_REQUESTS);
+    }
+
+    private ResponseEntity<JsonNode> register(ApiActor actor, String email, String clubName, String ip) {
+        return actor.postWithForwardedFor(
+                "/api/auth/register",
+                Map.of(
+                        "email",
+                        email,
+                        "password",
+                        "s3cure-password",
+                        "displayName",
+                        "X",
+                        "createOrganization",
+                        Map.of("name", clubName, "climbingType", "BOULDER")),
+                ip,
+                JsonNode.class);
+    }
+
+    @Test
     void mutationsWithoutCsrfTokenAreRejected() {
         // Anonyme : la protection CSRF déclenche le point d'entrée d'authentification → 401
         ApiActor anonymous = new ApiActor(port);
