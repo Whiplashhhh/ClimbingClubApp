@@ -13,6 +13,8 @@ const joinSlug = ref('')
 const error = ref<string | null>(null)
 const loading = ref(false)
 
+const passwordValid = computed(() => passwordChecks(password.value).valid)
+
 async function onSubmit() {
   error.value = null
   loading.value = true
@@ -84,16 +86,17 @@ async function onSubmit() {
         >
       </label>
       <label class="flex flex-col gap-1 text-sm text-gray-700">
-        Mot de passe (8 caractères minimum)
+        Mot de passe
         <input
           v-model="password"
           type="password"
           required
-          minlength="8"
+          minlength="10"
           maxlength="72"
           autocomplete="new-password"
           class="rounded-md border border-gray-300 px-3 py-2"
         >
+        <PasswordRules :password="password" />
       </label>
 
       <template v-if="mode === 'create'">
@@ -131,7 +134,7 @@ async function onSubmit() {
       <p v-if="error" class="text-sm text-red-600">{{ error }}</p>
       <button
         type="submit"
-        :disabled="loading"
+        :disabled="loading || !passwordValid"
         class="rounded-md bg-indigo-600 px-4 py-2 font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
       >
         {{ mode === 'create' ? 'Créer mon club' : "Demander l'adhésion" }}

@@ -94,3 +94,8 @@ Hypothèses prises faute d'information, avec le défaut le plus raisonnable. À 
   uniformément (y compris les encadrants) — l'admin choisit la valeur ; elle ne concerne que le
   groupe général (les groupes de créneau et les 1:1 restent libres). Réglage exposé en lecture à
   tout membre actif (`GET /api/messaging/settings`), modifiable par les admins (`PATCH`).
+- **A-019** (2026-07-06) : Politique de mot de passe (`@StrongPassword`, appliquée à l'inscription
+  et au changement) : **≥ 10 caractères** et **au moins 3 des 4 classes** (majuscule, minuscule,
+  chiffre, caractère spécial), plus rejet d'une petite liste de mots de passe évidents. Validée
+  côté back (source de vérité) et reflétée côté front par un indicateur de règles. Le back reste
+  borné à 72 caractères (limite bcrypt).

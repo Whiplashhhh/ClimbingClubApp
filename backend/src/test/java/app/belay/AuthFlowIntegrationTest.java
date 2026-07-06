@@ -176,6 +176,14 @@ class AuthFlowIntegrationTest {
                         .getStatusCode())
                 .isEqualTo(HttpStatus.BAD_REQUEST);
 
+        // Assez long mais une seule classe de caractères → 400 (politique de robustesse)
+        assertThat(actor.post(
+                                "/api/auth/change-password",
+                                Map.of("currentPassword", "s3cure-password", "newPassword", "onlylowercase"),
+                                JsonNode.class)
+                        .getStatusCode())
+                .isEqualTo(HttpStatus.BAD_REQUEST);
+
         // Changement valide → 204
         assertThat(actor.post(
                                 "/api/auth/change-password",
