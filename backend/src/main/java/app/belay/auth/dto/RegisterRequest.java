@@ -1,5 +1,6 @@
 package app.belay.auth.dto;
 
+import app.belay.common.validation.StrongPassword;
 import app.belay.organization.ClimbingType;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.Valid;
@@ -14,7 +15,7 @@ import jakarta.validation.constraints.Size;
  */
 public record RegisterRequest(
         @NotBlank @Email @Size(max = 255) String email,
-        @NotBlank @Size(min = 8, max = 72) String password,
+        @NotBlank @StrongPassword @Size(max = 72) String password,
         @NotBlank @Size(max = 120) String displayName,
         @Valid CreateOrganization createOrganization,
 

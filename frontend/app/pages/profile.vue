@@ -20,7 +20,7 @@ const success = ref(false)
 const canSubmit = computed(
   () =>
     currentPassword.value.length > 0 &&
-    newPassword.value.length >= 8 &&
+    passwordChecks(newPassword.value).valid &&
     newPassword.value === confirmPassword.value,
 )
 
@@ -84,9 +84,10 @@ async function changePassword() {
         v-model="newPassword"
         type="password"
         autocomplete="new-password"
-        placeholder="Nouveau mot de passe (8 caractères min.)"
+        placeholder="Nouveau mot de passe"
         class="rounded-md border border-gray-300 px-3 py-2 focus:border-indigo-500 focus:outline-none"
       >
+      <PasswordRules :password="newPassword" />
       <input
         v-model="confirmPassword"
         type="password"
