@@ -26,7 +26,7 @@ import org.springframework.web.bind.annotation.RestController;
 @Tag(name = "media", description = "Authenticated, tenant-scoped delivery of stored images")
 public class MediaController {
 
-    private static final Set<String> KNOWN_PREFIXES = Set.of("posts", "sectors", "routes");
+    private static final Set<String> KNOWN_PREFIXES = Set.of("posts", "sectors", "routes", "avatars");
 
     private final StorageService storageService;
 

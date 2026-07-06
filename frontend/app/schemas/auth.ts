@@ -8,6 +8,7 @@ export const meSchema = z.object({
   id: z.uuid(),
   email: z.string(),
   displayName: z.string(),
+  avatarUrl: z.string().optional(),
   role: z.enum(['OWNER', 'ADMIN', 'COACH', 'MEMBER']),
   status: z.enum(['PENDING', 'ACTIVE', 'DISABLED']),
   organization: z.object({
@@ -21,6 +22,7 @@ export const meSchema = z.object({
 export const memberSchema = z.object({
   id: z.uuid(),
   displayName: z.string(),
+  avatarUrl: z.string().optional(),
   role: z.enum(['OWNER', 'ADMIN', 'COACH', 'MEMBER']),
 }) satisfies z.ZodType<components['schemas']['MemberResponse']>
 

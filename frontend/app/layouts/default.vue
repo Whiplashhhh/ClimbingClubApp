@@ -134,14 +134,20 @@ async function onLogout() {
             <div ref="menuRoot" class="relative shrink-0">
               <button
                 type="button"
-                class="flex h-8 w-8 items-center justify-center rounded-full bg-indigo-600 text-xs font-semibold text-white hover:bg-indigo-700"
+                class="flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-indigo-600 text-xs font-semibold text-white hover:bg-indigo-700"
                 :aria-label="`Menu du compte de ${auth.me.displayName}`"
                 aria-haspopup="menu"
                 :aria-expanded="menuOpen"
                 data-testid="avatar-button"
                 @click="menuOpen = !menuOpen"
               >
-                {{ initials }}
+                <img
+                  v-if="auth.me.avatarUrl"
+                  :src="auth.me.avatarUrl"
+                  alt=""
+                  class="h-full w-full object-cover"
+                >
+                <span v-else>{{ initials }}</span>
               </button>
               <div
                 v-if="menuOpen"

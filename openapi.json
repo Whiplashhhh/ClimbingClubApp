@@ -1062,6 +1062,41 @@
         }
       }
     },
+    "/api/auth/avatar" : {
+      "post" : {
+        "tags" : [ "auth" ],
+        "summary" : "Upload the current user's profile photo (JPEG/PNG/WebP, content-sniffed, max 5 MB)",
+        "operationId" : "uploadAvatar",
+        "requestBody" : {
+          "content" : {
+            "multipart/form-data" : {
+              "schema" : {
+                "type" : "object",
+                "properties" : {
+                  "image" : {
+                    "type" : "string",
+                    "format" : "binary"
+                  }
+                },
+                "required" : [ "image" ]
+              }
+            }
+          }
+        },
+        "responses" : {
+          "400" : {
+            "description" : "The file is not a supported image",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/MeResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/sessions/{sessionId}" : {
       "delete" : {
         "tags" : [ "sessions" ],
@@ -2392,6 +2427,9 @@
           "displayName" : {
             "type" : "string"
           },
+          "avatarUrl" : {
+            "type" : "string"
+          },
           "role" : {
             "type" : "string",
             "enum" : [ "OWNER", "ADMIN", "COACH", "MEMBER" ]
@@ -2546,6 +2584,9 @@
             "type" : "string"
           },
           "displayName" : {
+            "type" : "string"
+          },
+          "avatarUrl" : {
             "type" : "string"
           },
           "role" : {

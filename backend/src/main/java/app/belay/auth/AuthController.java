@@ -41,18 +41,26 @@ public class AuthController {
     private final SecurityContextRepository securityContextRepository;
     private final UserRepository userRepository;
     private final AuthRateLimiter rateLimiter;
+    private final app.belay.storage.StorageService storageService;
 
     public AuthController(
             AuthService authService,
             AuthenticationManager authenticationManager,
             SecurityContextRepository securityContextRepository,
             UserRepository userRepository,
-            AuthRateLimiter rateLimiter) {
+            AuthRateLimiter rateLimiter,
+            app.belay.storage.StorageService storageService) {
         this.authService = authService;
         this.authenticationManager = authenticationManager;
         this.securityContextRepository = securityContextRepository;
         this.userRepository = userRepository;
         this.rateLimiter = rateLimiter;
+        this.storageService = storageService;
+    }
+
+    /** Construit la réponse profil en résolvant l'URL de l'avatar (ou null). */
+    private MeResponse toMe(AppUser user) {
+        return MeResponse.from(user, storageService.publicUrlOrNull(user.getAvatarObjectKey()));
     }
 
     @PostMapping("/register")
@@ -66,7 +74,7 @@ public class AuthController {
         rateLimiter.recordAndCheckRegister(request.getRemoteAddr());
         AppUser user = authService.register(body);
         establishSession(body.email(), body.password(), request, response);
-        return MeResponse.from(user);
+        return toMe(user);
     }
 
     @PostMapping("/login")
@@ -80,7 +88,7 @@ public class AuthController {
         try {
             UserPrincipal principal = establishSession(body.email(), body.password(), request, response);
             rateLimiter.resetLogin(body.email());
-            return MeResponse.from(loadUser(principal));
+            return toMe(loadUser(principal));
         } catch (org.springframework.security.core.AuthenticationException e) {
             rateLimiter.recordLoginFailure(body.email());
             throw e;
@@ -97,7 +105,7 @@ public class AuthController {
     @Operation(summary = "Current authenticated user profile")
     @Transactional(readOnly = true)
     public MeResponse me(@AuthenticationPrincipal UserPrincipal principal) {
-        return MeResponse.from(loadUser(principal));
+        return toMe(loadUser(principal));
     }
 
     @PostMapping("/change-password")
@@ -117,8 +125,25 @@ public class AuthController {
     @ApiResponse(responseCode = "409", description = "Email already registered")
     public MeResponse updateProfile(
             @AuthenticationPrincipal UserPrincipal principal, @Valid @RequestBody UpdateProfileRequest body) {
-        return MeResponse.from(
+        return toMe(
                 authService.updateProfile(principal.id(), body.displayName(), body.email(), body.currentPassword()));
+    }
+
+    @PostMapping(value = "/avatar", consumes = org.springframework.http.MediaType.MULTIPART_FORM_DATA_VALUE)
+    @Transactional
+    @Operation(summary = "Upload the current user's profile photo (JPEG/PNG/WebP, content-sniffed, max 5 MB)")
+    @ApiResponse(responseCode = "400", description = "The file is not a supported image")
+    public MeResponse uploadAvatar(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @org.springframework.web.bind.annotation.RequestPart("image")
+                    org.springframework.web.multipart.MultipartFile image) {
+        byte[] bytes;
+        try {
+            bytes = image.getBytes();
+        } catch (java.io.IOException e) {
+            throw new java.io.UncheckedIOException("Failed to read uploaded file", e);
+        }
+        return toMe(authService.updateAvatar(principal.id(), bytes));
     }
 
     private AppUser loadUser(UserPrincipal principal) {

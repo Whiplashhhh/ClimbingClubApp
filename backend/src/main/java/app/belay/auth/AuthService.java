@@ -5,6 +5,7 @@ import app.belay.common.ConflictException;
 import app.belay.common.NotFoundException;
 import app.belay.organization.Organization;
 import app.belay.organization.OrganizationRepository;
+import app.belay.storage.StorageService;
 import app.belay.user.AppUser;
 import app.belay.user.Role;
 import app.belay.user.UserRepository;
@@ -22,14 +23,17 @@ public class AuthService {
     private final UserRepository userRepository;
     private final OrganizationRepository organizationRepository;
     private final PasswordEncoder passwordEncoder;
+    private final StorageService storageService;
 
     public AuthService(
             UserRepository userRepository,
             OrganizationRepository organizationRepository,
-            PasswordEncoder passwordEncoder) {
+            PasswordEncoder passwordEncoder,
+            StorageService storageService) {
         this.userRepository = userRepository;
         this.organizationRepository = organizationRepository;
         this.passwordEncoder = passwordEncoder;
+        this.storageService = storageService;
     }
 
     @Transactional
@@ -94,6 +98,20 @@ public class AuthService {
                 throw new ConflictException("Email already registered");
             }
             user.setEmail(normalized);
+        }
+        return user;
+    }
+
+    /** Remplace la photo de profil (image validée par contenu) ; l'ancienne est supprimée. */
+    @Transactional
+    public AppUser updateAvatar(UUID userId, byte[] content) {
+        AppUser user = userRepository.findById(userId).orElseThrow(() -> new NotFoundException("User not found"));
+        String oldKey = user.getAvatarObjectKey();
+        String key = storageService.storeImage(
+                content, "avatars/" + user.getOrganization().getId());
+        user.setAvatarObjectKey(key);
+        if (oldKey != null) {
+            storageService.delete(oldKey);
         }
         return user;
     }

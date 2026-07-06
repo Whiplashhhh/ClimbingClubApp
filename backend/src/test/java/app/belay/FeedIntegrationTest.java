@@ -165,6 +165,44 @@ class FeedIntegrationTest {
     }
 
     @Test
+    void memberUploadsAvatarServedThroughMediaAndExposedInProfile() throws Exception {
+        MultipartBodyBuilder builder = new MultipartBodyBuilder();
+        builder.part("image", namedResource(pngBytes(), "moi.png"), MediaType.IMAGE_PNG);
+        ResponseEntity<JsonNode> uploaded = member.postMultipart("/api/auth/avatar", builder.build(), JsonNode.class);
+        assertThat(uploaded.getStatusCode()).isEqualTo(HttpStatus.OK);
+        String avatarUrl = uploaded.getBody().path("avatarUrl").asText();
+        assertThat(avatarUrl).startsWith("/api/media/avatars/");
+
+        // La photo est servie via /api/media et exposée dans le profil et la liste des membres
+        ResponseEntity<byte[]> download = member.get(avatarUrl, byte[].class);
+        assertThat(download.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(download.getHeaders().getContentType()).isEqualTo(MediaType.IMAGE_PNG);
+        assertThat(member.get("/api/auth/me", JsonNode.class)
+                        .getBody()
+                        .path("avatarUrl")
+                        .asText())
+                .isEqualTo(avatarUrl);
+        assertThat(owner.get("/api/members", JsonNode.class).getBody().findValuesAsText("avatarUrl"))
+                .contains(avatarUrl);
+
+        // Un non-membre de l'org ne peut pas récupérer cet avatar (isolation multi-tenant)
+        ApiActor outsider = new ApiActor(port);
+        outsider.post(
+                "/api/auth/register",
+                Map.of(
+                        "email",
+                        "outsider-avatar@club.fr",
+                        "password",
+                        "s3cure-password",
+                        "displayName",
+                        "Outsider",
+                        "createOrganization",
+                        Map.of("name", "Autre club avatar", "climbingType", "BOULDER")),
+                JsonNode.class);
+        assertThat(outsider.get(avatarUrl, byte[].class).getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+    }
+
+    @Test
     void deleteIsRestrictedToAuthorOrAdmins() {
         String coachPostId = createPost(coach, "COACH_STUDENTS", "Info du coach")
                 .getBody()

@@ -38,6 +38,9 @@ public class AppUser {
     @Column(name = "display_name", nullable = false, length = 120)
     private String displayName;
 
+    @Column(name = "avatar_object_key", length = 255)
+    private String avatarObjectKey;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     private Role role;
@@ -110,6 +113,14 @@ public class AppUser {
 
     public void setDisplayName(String displayName) {
         this.displayName = displayName;
+    }
+
+    public String getAvatarObjectKey() {
+        return avatarObjectKey;
+    }
+
+    public void setAvatarObjectKey(String avatarObjectKey) {
+        this.avatarObjectKey = avatarObjectKey;
     }
 
     public Role getRole() {
