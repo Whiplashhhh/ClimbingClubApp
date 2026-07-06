@@ -57,4 +57,4 @@
 - [ ] Éditeur d'annotations de prises
 - [ ] Itinéraire (deep-link maps)
 - [x] Rate limiting (Redis) sur les endpoints sensibles (login par email, inscription par IP — 429)
-- [ ] Export / suppression RGPD
+- [~] Export / suppression RGPD (export des données personnelles fait ; suppression de compte à suivre)

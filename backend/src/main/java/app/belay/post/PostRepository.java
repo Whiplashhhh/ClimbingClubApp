@@ -1,5 +1,6 @@
 package app.belay.post;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.domain.Pageable;
@@ -9,6 +10,9 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 public interface PostRepository extends JpaRepository<Post, UUID> {
+
+    /** Posts rédigés par un utilisateur (export RGPD). */
+    List<Post> findByAuthorIdOrderByCreatedAtDescIdDesc(UUID authorId);
 
     /**
      * Fil d'un utilisateur : publications de SON organisation dont il fait partie de l'audience.

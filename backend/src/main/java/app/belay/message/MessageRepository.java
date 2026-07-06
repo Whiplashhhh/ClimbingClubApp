@@ -43,6 +43,9 @@ public interface MessageRepository extends JpaRepository<Message, UUID> {
             """)
     List<Message> findLatestPerConversation(@Param("conversationIds") List<UUID> conversationIds);
 
+    /** Messages rédigés par un utilisateur (export RGPD). */
+    List<Message> findBySenderIdOrderByCreatedAtAsc(UUID senderId);
+
     /** Messages postés par un membre dans un fil depuis un instant (limite de débit). */
     @Query("""
             select count(m.id) from Message m

@@ -10,6 +10,25 @@ const roleLabels: Record<string, string> = {
   MEMBER: 'Membre',
 }
 
+// Export RGPD
+const exporting = ref(false)
+
+async function downloadData() {
+  exporting.value = true
+  try {
+    const data = await apiFetch<unknown>('/api/account/export')
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'belay-mes-donnees.json'
+    a.click()
+    URL.revokeObjectURL(url)
+  } finally {
+    exporting.value = false
+  }
+}
+
 // Photo de profil
 const avatarError = ref<string | null>(null)
 const avatarUploading = ref(false)
@@ -261,5 +280,22 @@ async function changePassword() {
         {{ submitting ? 'Enregistrement…' : 'Mettre à jour' }}
       </button>
     </form>
+
+    <section class="flex flex-col gap-2 rounded-lg border border-gray-200 bg-white p-4">
+      <h2 class="text-lg font-semibold text-gray-900">Mes données</h2>
+      <p class="text-sm text-gray-600">
+        Téléchargez l'ensemble de vos données personnelles (profil, séances, votes, messages,
+        notifications) au format JSON.
+      </p>
+      <button
+        type="button"
+        :disabled="exporting"
+        class="self-start rounded-md border border-gray-300 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+        data-testid="export-data"
+        @click="downloadData"
+      >
+        {{ exporting ? 'Préparation…' : 'Télécharger mes données' }}
+      </button>
+    </section>
   </div>
 </template>
