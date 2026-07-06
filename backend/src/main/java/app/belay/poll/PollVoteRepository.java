@@ -13,6 +13,15 @@ public interface PollVoteRepository extends JpaRepository<PollVote, UUID> {
 
     List<PollVote> findAllByUserIdAndPollIdIn(UUID userId, List<UUID> pollIds);
 
+    /** Tous les votes d'un utilisateur (export RGPD), option et sondage chargés. */
+    @Query("""
+            select v from PollVote v
+            join fetch v.option o
+            join fetch o.poll
+            where v.user.id = :userId
+            """)
+    List<PollVote> findAllByUserId(@Param("userId") UUID userId);
+
     /** Nombre de voix par option, pour les sondages donnés (agrégat des résultats). */
     @Query("""
             select v.option.id as optionId, count(v.id) as total

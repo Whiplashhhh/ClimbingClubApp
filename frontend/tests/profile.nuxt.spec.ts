@@ -85,4 +85,19 @@ describe('profile page', () => {
     })
     expect(wrapper.text()).toContain('Mot de passe mis à jour')
   })
+
+  it('downloads the personal-data export', async () => {
+    ;(URL as unknown as { createObjectURL: unknown }).createObjectURL = vi.fn(() => 'blob:x')
+    ;(URL as unknown as { revokeObjectURL: unknown }).revokeObjectURL = vi.fn()
+    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {})
+    apiFetchMock.mockResolvedValue({ profile: { email: 'grimpeur@club.fr' } })
+
+    const auth = useAuthStore()
+    auth.me = me
+    auth.initialized = true
+
+    wrapper = await mountSuspended(ProfilePage)
+    await wrapper.find('[data-testid="export-data"]').trigger('click')
+    expect(apiFetchMock).toHaveBeenCalledWith('/api/account/export')
+  })
 })

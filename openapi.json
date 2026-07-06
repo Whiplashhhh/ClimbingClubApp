@@ -9,14 +9,8 @@
     "url" : "/"
   } ],
   "tags" : [ {
-    "name" : "notifications",
-    "description" : "In-app notifications of the authenticated member"
-  }, {
     "name" : "media",
     "description" : "Authenticated, tenant-scoped delivery of stored images"
-  }, {
-    "name" : "feed",
-    "description" : "Home feed: posts with an audience, aggregated per user (tenant-scoped)"
   }, {
     "name" : "friends",
     "description" : "Friend graph within the organization"
@@ -26,12 +20,6 @@
   }, {
     "name" : "slots",
     "description" : "Weekly recurring training slots and their member groups (tenant-scoped)"
-  }, {
-    "name" : "sessions",
-    "description" : "Climbing sessions and ascents (tenant-scoped, owner-managed)"
-  }, {
-    "name" : "auth",
-    "description" : "Registration, login and session management"
   }, {
     "name" : "messaging",
     "description" : "Private coach↔student conversations (tenant-scoped)"
@@ -44,6 +32,21 @@
   }, {
     "name" : "polls",
     "description" : "Polls sharing the feed audience model (tenant-scoped)"
+  }, {
+    "name" : "notifications",
+    "description" : "In-app notifications of the authenticated member"
+  }, {
+    "name" : "feed",
+    "description" : "Home feed: posts with an audience, aggregated per user (tenant-scoped)"
+  }, {
+    "name" : "sessions",
+    "description" : "Climbing sessions and ascents (tenant-scoped, owner-managed)"
+  }, {
+    "name" : "account",
+    "description" : "Account-wide operations (GDPR export and deletion)"
+  }, {
+    "name" : "auth",
+    "description" : "Registration, login and session management"
   } ],
   "paths" : {
     "/api/slots/{slotId}" : {
@@ -1575,6 +1578,25 @@
         }
       }
     },
+    "/api/account/export" : {
+      "get" : {
+        "tags" : [ "account" ],
+        "summary" : "Export all of the caller's personal data (GDPR)",
+        "operationId" : "export",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AccountExportResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/slots/{slotId}/members/{userId}" : {
       "delete" : {
         "tags" : [ "slots" ],
@@ -2848,6 +2870,96 @@
           },
           "headerName" : {
             "type" : "string"
+          }
+        }
+      },
+      "AccountExportResponse" : {
+        "type" : "object",
+        "properties" : {
+          "profile" : {
+            "$ref" : "#/components/schemas/MeResponse"
+          },
+          "sessions" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/SessionResponse"
+            }
+          },
+          "friends" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/FriendResponse"
+            }
+          },
+          "posts" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/PostExport"
+            }
+          },
+          "pollVotes" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/PollVoteExport"
+            }
+          },
+          "messages" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/MessageExport"
+            }
+          },
+          "notifications" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/NotificationResponse"
+            }
+          }
+        }
+      },
+      "MessageExport" : {
+        "type" : "object",
+        "properties" : {
+          "conversationId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "body" : {
+            "type" : "string"
+          },
+          "createdAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        }
+      },
+      "PollVoteExport" : {
+        "type" : "object",
+        "properties" : {
+          "question" : {
+            "type" : "string"
+          },
+          "option" : {
+            "type" : "string"
+          }
+        }
+      },
+      "PostExport" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "title" : {
+            "type" : "string"
+          },
+          "body" : {
+            "type" : "string"
+          },
+          "createdAt" : {
+            "type" : "string",
+            "format" : "date-time"
           }
         }
       }

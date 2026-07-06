@@ -644,6 +644,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/account/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Export all of the caller's personal data (GDPR) */
+        get: operations["export"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/slots/{slotId}/members/{userId}": {
         parameters: {
             query?: never;
@@ -1225,6 +1242,34 @@ export interface components {
             parameterName?: string;
             token?: string;
             headerName?: string;
+        };
+        AccountExportResponse: {
+            profile?: components["schemas"]["MeResponse"];
+            sessions?: components["schemas"]["SessionResponse"][];
+            friends?: components["schemas"]["FriendResponse"][];
+            posts?: components["schemas"]["PostExport"][];
+            pollVotes?: components["schemas"]["PollVoteExport"][];
+            messages?: components["schemas"]["MessageExport"][];
+            notifications?: components["schemas"]["NotificationResponse"][];
+        };
+        MessageExport: {
+            /** Format: uuid */
+            conversationId?: string;
+            body?: string;
+            /** Format: date-time */
+            createdAt?: string;
+        };
+        PollVoteExport: {
+            question?: string;
+            option?: string;
+        };
+        PostExport: {
+            /** Format: uuid */
+            id?: string;
+            title?: string;
+            body?: string;
+            /** Format: date-time */
+            createdAt?: string;
         };
     };
     responses: never;
@@ -2514,6 +2559,26 @@ export interface operations {
                     "*/*": {
                         [key: string]: string;
                     };
+                };
+            };
+        };
+    };
+    export: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["AccountExportResponse"];
                 };
             };
         };
